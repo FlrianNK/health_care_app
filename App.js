@@ -17,10 +17,9 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Picker } from '@react-native-picker/picker';
 import { Image } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
-// This is the main function for the Health Goals Screen
 function HealthGoalsScreen() {
-  // Setting up global states for age, gender, height, weight, activity level and health goal
   const [lAge, setAge] = useState('');
   const [lGender, setGender] = useState(null);
   const [lHeight, setHeight] = useState('');
@@ -28,7 +27,6 @@ function HealthGoalsScreen() {
   const [lActivityLevel, setActivityLevel] = useState(null);
   const [lHealthGoal, setHealthGoal] = useState(null);
 
-  // Checking if all the form fields are filled correctly
   const lIsFormValid =
     lAge !== '' &&
     lGender !== null &&
@@ -105,7 +103,7 @@ function HealthGoalsScreen() {
         <ScrollView style={styles.scrollview} keyboardShouldPersistTaps="handled">
           <Text style={styles.label}>Age:</Text>
           <TextInput
-            style={styles.input}
+            style={styles.inputFieldForm}
             onChangeText={(text) => {
               // Exclude unwanted characters
               let lNewText = text.replace(/[^0-9]/g, '');
@@ -131,7 +129,7 @@ function HealthGoalsScreen() {
           </Picker>
           <Text style={styles.label}>Height (cm):</Text>
           <TextInput
-            style={styles.input}
+            style={styles.inputFieldForm}
             onChangeText={(text) => {
               // Exclude unwanted characters
               let lNewText = text.replace(/[^0-9]/g, '');
@@ -144,7 +142,7 @@ function HealthGoalsScreen() {
           />
           <Text style={styles.label}>Weight (kg):</Text>
           <TextInput
-            style={styles.input}
+            style={styles.inputFieldForm}
             value={lInputTextWeight}
             onChangeText={(text) => {
               // Allow numbers and a single decimal point
@@ -208,23 +206,35 @@ function HealthGoalsScreen() {
 function FoodDatabaseScreen() {
   const [lSearchQuery, setLSearchQuery] = useState('');
   const [lFoods, setLFoods] = useState([]);
-  const [lMealPlan, setLMealPlan] = useState({
-    Breakfast: [],
-    Lunch: [],
-    Snack: [],
-    Dinner: [],
-  });
   const [lSelectedMeal, setLSelectedMeal] = useState('');
   const [lModalVisible, setLModalVisible] = useState(false);
+  const [lSelectedFoodItem, setLSelectedFoodItem] = useState(null);
+  const [lSelectedDay, setLSelectedDay] = useState(new Date());
+  const [tempMealSelection, setTempMealSelection] = useState('');
+  const [lMealPlan, setLMealPlan] = useState({
+    Lundi: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
+    Mardi: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
+    Mercredi: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
+    Jeudi: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
+    Vendredi: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
+    Samedi: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
+    Dimanche: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
+  });
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
   const handleInputChange = (value) => {
     setLSearchQuery(value);
   };
-  const [lSelectedFoodItem, setLSelectedFoodItem] = useState(null);
 
   const handleSearch = async () => {
+    if (!lSearchQuery || lSearchQuery.trim() === '') {
+      Alert.alert('Error', 'Please enter a food to search for');
+      return;
+    }
     try {
       const response = await fetch(
-        `https://api.edamam.com/api/food-database/v2/parser?ingr=${lSearchQuery}&app_id=97b53550&app_key=7e926f3e50058f664119bca13c924cba`
+        `https://api.edamam.com/api/food-database/v2/parser?ingr=${lSearchQuery}&app_id=97b53550&app_key=6137296166e4305562e36a0538360545`
       );
 
       if (!response.ok) {
@@ -271,16 +281,22 @@ function FoodDatabaseScreen() {
   };
 
   const renderItem = ({ item }) => (
-    <View>
-      <Image source={{ uri: item.food.image }} style={styles.image} />
-      <Text style={styles.foodTitle}>{item.food.label}</Text>
-      <Text>Category: {item.food.category}</Text>
-      <Text>Calories: {item.roundedNutrients.ENERC_KCAL} kcal</Text>
-      <Text>Carbs: {item.roundedNutrients.CHOCDF} g</Text>
-      <Text>Fat: {item.roundedNutrients.FAT} g</Text>
-      <Text>Fiber: {item.roundedNutrients.FIBTG} g</Text>
-      <Text>Protein: {item.roundedNutrients.PROCNT} g</Text>
-      <Button style={styles.button} title="Add to Meal Plan" onPress={() => addToMealPlan(item)} />
+    <View style={styles.card}>
+      <View style={styles.cardContent}>
+        <Image source={{ uri: item.food.image }} style={styles.image} />
+        <Text style={styles.foodTitle}>{item.food.label}</Text>
+        <Text>Category: {item.food.category}</Text>
+        <Text>Calories: {item.roundedNutrients.ENERC_KCAL} kcal</Text>
+        <Text>Carbs: {item.roundedNutrients.CHOCDF} g</Text>
+        <Text>Fat: {item.roundedNutrients.FAT} g</Text>
+        <Text>Fiber: {item.roundedNutrients.FIBTG} g</Text>
+        <Text>Protein: {item.roundedNutrients.PROCNT} g</Text>
+        <Button
+          style={styles.button}
+          title="Add to Meal Plan"
+          onPress={() => addToMealPlan(item)}
+        />
+      </View>
     </View>
   );
 
@@ -289,25 +305,47 @@ function FoodDatabaseScreen() {
     setLModalVisible(true);
   };
 
-  const handleMealSelection = (itemValue) => {
-    if (lSelectedFoodItem) {
-      let mealToAdd = itemValue;
-
-      setLMealPlan((prevPlan) => ({
-        ...prevPlan,
-        [mealToAdd]: [...prevPlan[mealToAdd], lSelectedFoodItem],
-      }));
-
-      Alert.alert('Success', 'The food has been added to your meal plan');
-
-      setLSelectedFoodItem(null); // Reset the selectedFoodItem state after adding
-      setLSelectedMeal(''); // Reset the selectedMeal state after adding
-    }
-    setLModalVisible(false); // Hide the modal after adding
-  };
-
   const handleModalClose = () => {
     setLModalVisible(false);
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    const currentDate = selectedDate || date;
+    setShowDatePicker(false);
+    setSelectedDate(currentDate);
+  };
+
+  const handleMealSelectionTemp = (itemValue) => {
+    setTempMealSelection(itemValue);
+  };
+
+  const handleConfirmation = () => {
+    if (!lSelectedDay || !tempMealSelection) {
+      Alert.alert('Erreur', 'Veuillez choisir un jour et un repas');
+    } else {
+      if (lSelectedFoodItem && lMealPlan[lSelectedDay][tempMealSelection]) {
+        let lMealToAdd = tempMealSelection;
+
+        setLMealPlan((prevPlan) => {
+          const newPlan = {
+            ...prevPlan,
+            [lSelectedDay]: {
+              ...prevPlan[lSelectedDay],
+              [lMealToAdd]: [...prevPlan[lSelectedDay][lMealToAdd], lSelectedFoodItem],
+            },
+          };
+          console.log('Updated meal plan:', prevPlan);
+          return newPlan;
+        });
+
+        Alert.alert('Succès', "L'aliment a été ajouté à votre plan de repas");
+
+        setLSelectedFoodItem(null); // Réinitialisez l'état selectedFoodItem après l'ajout
+        setTempMealSelection(''); // Réinitialisez l'état tempMealSelection après l'ajout
+        setLSelectedDay('');
+      }
+      setLModalVisible(false);
+    }
   };
 
   return (
@@ -315,6 +353,7 @@ function FoodDatabaseScreen() {
       <TextInput
         value={lSearchQuery}
         onChangeText={handleInputChange}
+        style={styles.input}
         placeholder="Search for a food..."
       />
       <TouchableOpacity style={styles.button} onPress={handleSearch}>
@@ -328,21 +367,51 @@ function FoodDatabaseScreen() {
       <Modal animationType="slide" transparent={true} visible={lModalVisible}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalText}>For which meal do you want to add the item to ?</Text>
-            <Picker selectedValue={lSelectedMeal} onValueChange={handleMealSelection}>
-              <Picker.Item label="Select meal type" value="" color="black" />
-              <Picker.Item label="Breakfast" value="Breakfast" color="black" />
-              <Picker.Item label="Lunch" value="Lunch" color="black" />
-              <Picker.Item label="Dinner" value="Dinner" color="black" />
-              <Picker.Item label="Snack" value="Snack" color="black" />
+            <Text style={styles.modalText}>Add to Meal Plan</Text>
+            <Text style={styles.modalText}>Select the day and meal for this item:</Text>
+            <TouchableOpacity
+              style={styles.ButtonDate}
+              onPress={() => setShowDatePicker(!showDatePicker)}>
+              <Text style={styles.ButtonDateText}>{`${selectedDate.toDateString()}`}</Text>
+            </TouchableOpacity>
+
+            {showDatePicker && (
+              <DateTimePicker
+                testID="dateTimePicker"
+                value={selectedDate}
+                mode={'date'}
+                minimumDate={new Date()}
+                is24Hour={true}
+                display="default"
+                onChange={handleDateChange}
+              />
+            )}
+            <Picker selectedValue={tempMealSelection} onValueChange={handleMealSelectionTemp}>
+              <Picker.Item label="Select the meal" value={null} enabled={false} />
+              <Picker.Item label="Breakfast" value="Breakfast" />
+              <Picker.Item label="Lunch" value="Lunch" />
+              <Picker.Item label="Snack" value="Snack" />
+              <Picker.Item label="Dinner" value="Dinner" />
             </Picker>
-            <Button title="Cancel" onPress={handleModalClose} />
+
+            <View style={styles.buttonContainer}>
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity style={styles.buttonConfirm} onPress={handleConfirmation}>
+                  <Text style={styles.buttonConfirmText}>Confirm</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.buttonCancel} onPress={handleModalClose}>
+                  <Text style={styles.buttonCancelText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         </View>
       </Modal>
     </View>
   );
 }
+
+function MealPlanningScreen() {}
 
 const styles = StyleSheet.create({
   scrollview: {
@@ -360,12 +429,12 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     color: '#293FA6',
   },
-  input: {
-    borderWidth: 1,
+  inputFieldForm: {
+    borderWidth: 1.5,
     borderColor: '#ddd',
     padding: 10,
-    fontSize: 18,
-    borderRadius: 6,
+    fontSize: 14,
+    borderRadius: 10,
   },
   picker: {
     borderWidth: 1,
@@ -380,11 +449,14 @@ const styles = StyleSheet.create({
     height: 10,
   },
   image: {
-    marginTop: 10,
-    marginBottom: 10,
-    width: 200,
-    height: 150,
+    width: 70,
+    height: 70,
+    borderRadius: 35, 
+    position: 'absolute', 
+    right: 0, 
+    top: -80, 
   },
+
   foodTitle: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -395,12 +467,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 15,
     width: 200,
-    alignItems: 'center', // center the text horizontally
-    justifyContent: 'center', // center the text vertically
-    padding: 10, // give some space around the text
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    padding: 10, 
   },
   buttonText: {
-    color: '#fff', // make the text white
+    color: '#fff',
   },
   question: {
     fontSize: 20,
@@ -411,17 +483,80 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)', // semi-transparent background
+    backgroundColor: 'rgba(0,0,0,0.5)', 
   },
   modalContent: {
     backgroundColor: 'white',
     padding: 20,
     borderRadius: 10,
-    width: '80%', // set to a percentage of screen width
+    width: '80%', 
   },
   modalText: {
     fontSize: 18,
-    marginBottom: 20, // add some space below the text
+    marginBottom: 20, 
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 10,
+  },
+  buttonCancel: {
+    backgroundColor: 'transparent',
+    borderColor: '#000',
+    borderWidth: 1,
+    borderRadius: 5,
+    padding: 10,
+    marginRight: 5,
+  },
+  buttonCancelText: {
+    color: '#000',
+  },
+  buttonConfirm: {
+    backgroundColor: '#293FA6',
+    borderColor: '#293FA6',
+    borderWidth: 1,
+    borderRadius: 5,
+    padding: 10,
+    marginRight: 5,
+  },
+  buttonConfirmText: {
+    color: '#fff',
+  },
+
+  ButtonDate: {
+    borderWidth: 1,
+    borderColor: '#000',
+    borderRadius: 5,
+    padding: 10,
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    width: 200,
+    alignSelf: 'center',
+    marginBottom: 20,
+    marginBottom: 10,
+  },
+
+  ButtonDateText: {
+    color: '#000',
+  },
+  card: {
+    borderRadius: 6,
+    elevation: 3,
+    backgroundColor: '#fff',
+    shadowOffset: { width: 1, height: 1 },
+    shadowColor: '#333',
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    marginHorizontal: 4,
+    marginVertical: 6,
+    marginBottom: 30,
+    marginTop: 30,
+  },
+  cardContent: {
+    marginTop: 40,
+    marginHorizontal: 18,
+    marginVertical: 10,
+    marginBottom: 20,
   },
 });
 const Tab = createBottomTabNavigator();
