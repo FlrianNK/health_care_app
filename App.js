@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Picker } from '@react-native-picker/picker';
 import { Image } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+
+/********************************************** */
+/*               HealthGoalsScreen              */
+/********************************************** */
 
 function HealthGoalsScreen() {
   const [lAge, setAge] = useState('');
@@ -203,7 +207,12 @@ function HealthGoalsScreen() {
   );
 }
 
+/********************************************** */
+/*               FoodDataBaseScreen             */
+/********************************************** */
+
 function FoodDatabaseScreen() {
+  const { lMealPlan, setMealPlan } = useContext(MealPlanContext);
   const [lSearchQuery, setLSearchQuery] = useState('');
   const [lFoods, setLFoods] = useState([]);
   const [lSelectedMeal, setLSelectedMeal] = useState('');
@@ -211,17 +220,9 @@ function FoodDatabaseScreen() {
   const [lSelectedFoodItem, setLSelectedFoodItem] = useState(null);
   const [lSelectedDay, setLSelectedDay] = useState(new Date());
   const [tempMealSelection, setTempMealSelection] = useState('');
-  const [lMealPlan, setLMealPlan] = useState({
-    Lundi: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
-    Mardi: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
-    Mercredi: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
-    Jeudi: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
-    Vendredi: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
-    Samedi: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
-    Dimanche: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
-  });
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [quantity, setQuantity] = useState(1);
 
   const handleInputChange = (value) => {
     setLSearchQuery(value);
@@ -301,6 +302,7 @@ function FoodDatabaseScreen() {
   );
 
   const addToMealPlan = (item) => {
+    item = { ...item, quantity };
     setLSelectedFoodItem(item);
     setLModalVisible(true);
   };
@@ -325,8 +327,9 @@ function FoodDatabaseScreen() {
     } else {
       if (lSelectedFoodItem && lMealPlan[lSelectedDay][tempMealSelection]) {
         let lMealToAdd = tempMealSelection;
+        lSelectedFoodItem.quantity = quantity;
 
-        setLMealPlan((prevPlan) => {
+        setMealPlan((prevPlan) => {
           const newPlan = {
             ...prevPlan,
             [lSelectedDay]: {
@@ -394,15 +397,43 @@ function FoodDatabaseScreen() {
               <Picker.Item label="Dinner" value="Dinner" />
             </Picker>
 
-            <View style={styles.buttonContainer}>
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.buttonConfirm} onPress={handleConfirmation}>
-                  <Text style={styles.buttonConfirmText}>Confirm</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.buttonCancel} onPress={handleModalClose}>
-                  <Text style={styles.buttonCancelText}>Cancel</Text>
-                </TouchableOpacity>
+            <View>
+              <Text style={styles.modalText}>Quantité désirée :</Text>
+              <View style={styles.quantityContainer}>
+                <TextInput
+                  style={styles.quantityInput}
+                  value={String(quantity)}
+                  onChangeText={(text) => {
+                    const newQuantity = Number(text);
+                    if (!Number.isNaN(newQuantity) && newQuantity > 0) {
+                      setQuantity(newQuantity);
+                    }
+                  }}
+                  keyboardType="numeric"
+                  maxLength={3}
+                />
+                <View style={styles.buttonsContainer}>
+                  <TouchableOpacity
+                    style={styles.quantityButton}
+                    onPress={() => setQuantity((prevQuantity) => Math.max(1, prevQuantity - 1))}>
+                    <Text style={styles.buttonText}>-</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.quantityButton}
+                    onPress={() => setQuantity((prevQuantity) => prevQuantity + 1)}>
+                    <Text style={styles.buttonText}>+</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
+            </View>
+
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity style={styles.buttonConfirm} onPress={handleConfirmation}>
+                <Text style={styles.buttonConfirmText}>Confirm</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.buttonCancel} onPress={handleModalClose}>
+                <Text style={styles.buttonCancelText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -411,7 +442,17 @@ function FoodDatabaseScreen() {
   );
 }
 
-function MealPlanningScreen() {}
+/********************************************** */
+/*               MealPlanningScreen             */
+/********************************************** */
+
+function MealPlanningScreen() {
+  const { mealPlan, setMealPlan } = useContext(MealPlanContext);
+}
+
+/********************************************** */
+/*            Style of the whole App             */
+/********************************************** */
 
 const styles = StyleSheet.create({
   scrollview: {
@@ -451,10 +492,10 @@ const styles = StyleSheet.create({
   image: {
     width: 70,
     height: 70,
-    borderRadius: 35, 
-    position: 'absolute', 
-    right: 0, 
-    top: -80, 
+    borderRadius: 35, // Pour rendre l'image circulaire
+    position: 'absolute', // Position absolue par rapport à son conteneur
+    right: 0, // Alignement à droite
+    top: -80, // Moitié de la hauteur de l'image pour placer la moitié de l'image hors de la carte
   },
 
   foodTitle: {
@@ -467,12 +508,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 15,
     width: 200,
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    padding: 10, 
+    alignItems: 'center', // center the text horizontally
+    justifyContent: 'center', // center the text vertically
+    padding: 10, // give some space around the text
   },
   buttonText: {
-    color: '#fff',
+    color: '#fff', // make the text white
   },
   question: {
     fontSize: 20,
@@ -483,17 +524,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)', 
+    backgroundColor: 'rgba(0,0,0,0.5)', // semi-transparent background
   },
   modalContent: {
     backgroundColor: 'white',
     padding: 20,
     borderRadius: 10,
-    width: '80%', 
+    width: '80%', // set to a percentage of screen width
   },
   modalText: {
-    fontSize: 18,
-    marginBottom: 20, 
+    fontSize: 16,
+    marginBottom: 20, // add some space below the text
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -558,50 +599,97 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     marginBottom: 20,
   },
+  quantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  quantityInput: {
+    borderWidth: 1,
+    borderColor: '#000',
+    width: 60,
+    height: 40,
+    textAlign: 'center',
+    fontSize: 16,
+    alignSelf: 'center',
+    marginHorizontal: 10,
+    marginTop: 10,
+  },
+  buttonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: 50,
+  },
+  quantityButton: {
+    backgroundColor: '#293FA6',
+    padding: 0,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+  },
 });
 const Tab = createBottomTabNavigator();
+export const MealPlanContext = React.createContext();
 
 export default function App() {
+  const [lMealPlan, setLMealPlan] = useState({
+    Monday: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
+    Tuesday: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
+    Wednesday: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
+    Thursday: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
+    Friday: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
+    Saturday: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
+    Sunday: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
+  });
+
   return (
-    <NavigationContainer>
-      <Tab.Navigator>
-        <Tab.Screen
-          name="Health Goals"
-          component={HealthGoalsScreen}
-          options={{
-            tabBarIcon: ({ color, size }) => (
-              <Image
-                source={require('./goal.png')}
-                style={{ height: size, width: size, tintColor: color }}
-              />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="Food Database"
-          component={FoodDatabaseScreen}
-          options={{
-            tabBarIcon: ({ color, size }) => (
-              <Image
-                source={require('./diet.png')}
-                style={{ height: size, width: size, tintColor: color }}
-              />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="Meal Planning"
-          component={MealPlanningScreen}
-          options={{
-            tabBarIcon: ({ color, size }) => (
-              <Image
-                source={require('./calendar.png')}
-                style={{ height: size, width: size, tintColor: color }}
-              />
-            ),
-          }}
-        />
-      </Tab.Navigator>
-    </NavigationContainer>
+    <MealPlanContext.Provider value={{ mealPlan: lMealPlan, setMealPlan: setLMealPlan }}>
+      <NavigationContainer>
+        <Tab.Navigator>
+          <Tab.Screen
+            name="Health Goals"
+            component={HealthGoalsScreen}
+            options={{
+              tabBarIcon: ({ color, size }) => (
+                <Image
+                  source={require('./goal.png')}
+                  style={{ height: size, width: size, tintColor: color }}
+                />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Food Database"
+            component={FoodDatabaseScreen}
+            options={{
+              tabBarIcon: ({ color, size }) => (
+                <Image
+                  source={require('./diet.png')}
+                  style={{ height: size, width: size, tintColor: color }}
+                />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Meal Planning"
+            component={MealPlanningScreen}
+            options={{
+              tabBarIcon: ({ color, size }) => (
+                <Image
+                  source={require('./calendar.png')}
+                  style={{ height: size, width: size, tintColor: color }}
+                />
+              ),
+            }}
+          />
+        </Tab.Navigator>
+      </NavigationContainer>
+    </MealPlanContext.Provider>
   );
 }
