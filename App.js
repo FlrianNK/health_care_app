@@ -42,18 +42,15 @@ function HealthGoalsScreen() {
     lHealthGoal !== null &&
     lHealthGoal !== 'Select your health goal';
 
-  // Setting up state for caloric intake and show results
   const [lCaloricIntake, setCaloricIntake] = useState(0);
   const [lShowResults, setShowResults] = useState(false);
   const [lInputTextWeight, setInputText] = useState('');
 
-  // Function to handle input change
   const handleInputChange = (setter) => (value) => {
     setShowResults(false);
     setter(value);
   };
 
-  // Use effect function to calculate caloric intake when all form fields are filled
   useEffect(() => {
     if (lIsFormValid) {
       calculateCaloricIntake();
@@ -135,7 +132,6 @@ function HealthGoalsScreen() {
           <TextInput
             style={styles.inputFieldForm}
             onChangeText={(text) => {
-              // Exclude unwanted characters
               let lNewText = text.replace(/[^0-9]/g, '');
               handleInputChange(lNewText);
             }}
@@ -152,14 +148,12 @@ function HealthGoalsScreen() {
               // Allow numbers and a single decimal point
               let newText = text.replace(/[^0-9\.]/g, '');
               if (newText.split('.').length > 2) {
-                // Prevent more than one dot
                 return;
               }
-              // Update the text manually
               setInputText(newText);
             }}
-            keyboardType="decimal-pad" // Use decimal-pad to allow both numbers and decimal point
-            maxLength={6} // Allow up to 3 digits before and after decimal point
+            keyboardType="decimal-pad" 
+            maxLength={6} 
           />
           <Text style={styles.label}>Activity Level:</Text>
           <Picker
@@ -212,13 +206,11 @@ function HealthGoalsScreen() {
 /********************************************** */
 
 function FoodDatabaseScreen() {
-  const { lMealPlan, setMealPlan } = useContext(MealPlanContext);
+  const { lMealPlan, addMealItem, removeMealItem } = useContext(MealPlanContext);
   const [lSearchQuery, setLSearchQuery] = useState('');
   const [lFoods, setLFoods] = useState([]);
-  const [lSelectedMeal, setLSelectedMeal] = useState('');
   const [lModalVisible, setLModalVisible] = useState(false);
   const [lSelectedFoodItem, setLSelectedFoodItem] = useState(null);
-  const [lSelectedDay, setLSelectedDay] = useState(new Date());
   const [tempMealSelection, setTempMealSelection] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -302,8 +294,13 @@ function FoodDatabaseScreen() {
   );
 
   const addToMealPlan = (item) => {
-    item = { ...item, quantity };
-    setLSelectedFoodItem(item);
+    setLSelectedFoodItem({
+      foodId: item.food.foodId,
+      label: item.food.label,
+      category: item.food.category,
+      nutrients: item.roundedNutrients,
+      quantity,
+    });
     setLModalVisible(true);
   };
 
@@ -322,32 +319,21 @@ function FoodDatabaseScreen() {
   };
 
   const handleConfirmation = () => {
-    if (!lSelectedDay || !tempMealSelection) {
+    if (!selectedDate || !tempMealSelection) {
       Alert.alert('Erreur', 'Veuillez choisir un jour et un repas');
     } else {
-      if (lSelectedFoodItem && lMealPlan[lSelectedDay][tempMealSelection]) {
-        let lMealToAdd = tempMealSelection;
-        lSelectedFoodItem.quantity = quantity;
+      // Convert the date to a string
+      let selectedDateString = selectedDate.toISOString().split('T')[0];
 
-        setMealPlan((prevPlan) => {
-          const newPlan = {
-            ...prevPlan,
-            [lSelectedDay]: {
-              ...prevPlan[lSelectedDay],
-              [lMealToAdd]: [...prevPlan[lSelectedDay][lMealToAdd], lSelectedFoodItem],
-            },
-          };
-          console.log('Updated meal plan:', prevPlan);
-          return newPlan;
-        });
+      // Add the selected food item to the meal plan
+      addMealItem(selectedDateString, tempMealSelection, lSelectedFoodItem, quantity);
+      console.log(selectedDateString, tempMealSelection, lSelectedFoodItem, quantity);
 
-        Alert.alert('Succès', "L'aliment a été ajouté à votre plan de repas");
-
-        setLSelectedFoodItem(null); // Réinitialisez l'état selectedFoodItem après l'ajout
-        setTempMealSelection(''); // Réinitialisez l'état tempMealSelection après l'ajout
-        setLSelectedDay('');
-      }
+      Alert.alert('Succès', "L'aliment a été ajouté à votre plan de repas");
+      setLSelectedFoodItem(null); 
+      setTempMealSelection(''); 
       setLModalVisible(false);
+      setSelectedDate(new Date()); 
     }
   };
 
@@ -492,10 +478,10 @@ const styles = StyleSheet.create({
   image: {
     width: 70,
     height: 70,
-    borderRadius: 35, // Pour rendre l'image circulaire
-    position: 'absolute', // Position absolue par rapport à son conteneur
-    right: 0, // Alignement à droite
-    top: -80, // Moitié de la hauteur de l'image pour placer la moitié de l'image hors de la carte
+    borderRadius: 35, 
+    position: 'absolute', 
+    right: 0, 
+    top: -80, 
   },
 
   foodTitle: {
@@ -508,12 +494,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 15,
     width: 200,
-    alignItems: 'center', // center the text horizontally
-    justifyContent: 'center', // center the text vertically
-    padding: 10, // give some space around the text
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    padding: 10, 
   },
   buttonText: {
-    color: '#fff', // make the text white
+    color: '#fff', 
   },
   question: {
     fontSize: 20,
@@ -524,17 +510,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)', // semi-transparent background
+    backgroundColor: 'rgba(0,0,0,0.5)', 
   },
   modalContent: {
     backgroundColor: 'white',
     padding: 20,
     borderRadius: 10,
-    width: '80%', // set to a percentage of screen width
+    width: '80%', 
   },
   modalText: {
     fontSize: 16,
-    marginBottom: 20, // add some space below the text
+    marginBottom: 20, 
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -638,18 +624,34 @@ const Tab = createBottomTabNavigator();
 export const MealPlanContext = React.createContext();
 
 export default function App() {
-  const [lMealPlan, setLMealPlan] = useState({
-    Monday: { meals: [] },
-    Tuesday: { meals: [] },
-    Wednesday: { meals: [] },
-    Thursday: { meals: [] },
-    Friday: { meals: [] },
-    Saturday: { meals: [] },
-    Sunday: { meals: [] },
-  });
+  const [lMealPlan, setLMealPlan] = useState({});
+
+  const addMealItem = (date, mealType, foodItem, quantity) => {
+    setLMealPlan((prevPlan) => {
+      const newPlan = { ...prevPlan };
+      if (!newPlan[date]) newPlan[date] = {};
+      if (!newPlan[date][mealType]) newPlan[date][mealType] = [];
+
+      newPlan[date][mealType].push({ foodItem, quantity });
+
+      return newPlan;
+    });
+  };
+
+  const removeMealItem = (date, mealType, foodItem) => {
+    setLMealPlan((prevPlan) => {
+      const newPlan = { ...prevPlan };
+
+      newPlan[date][mealType] = newPlan[date][mealType].filter(
+        (item) => item.foodItem !== foodItem
+      );
+
+      return newPlan;
+    });
+  };
 
   return (
-    <MealPlanContext.Provider value={{ mealPlan: lMealPlan, setMealPlan: setLMealPlan }}>
+    <MealPlanContext.Provider value={{ lMealPlan, addMealItem, removeMealItem }}>
       <NavigationContainer>
         <Tab.Navigator>
           <Tab.Screen
