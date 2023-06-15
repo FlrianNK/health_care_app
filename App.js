@@ -639,13 +639,13 @@ export const MealPlanContext = React.createContext();
 
 export default function App() {
   const [lMealPlan, setLMealPlan] = useState({
-    Monday: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
-    Tuesday: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
-    Wednesday: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
-    Thursday: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
-    Friday: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
-    Saturday: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
-    Sunday: { Breakfast: [], Lunch: [], Snack: [], Dinner: [] },
+    Monday: { meals: [] },
+    Tuesday: { meals: [] },
+    Wednesday: { meals: [] },
+    Thursday: { meals: [] },
+    Friday: { meals: [] },
+    Saturday: { meals: [] },
+    Sunday: { meals: [] },
   });
 
   return (
