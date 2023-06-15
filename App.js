@@ -42,15 +42,18 @@ function HealthGoalsScreen() {
     lHealthGoal !== null &&
     lHealthGoal !== 'Select your health goal';
 
+  // Setting up state for caloric intake and show results
   const [lCaloricIntake, setCaloricIntake] = useState(0);
   const [lShowResults, setShowResults] = useState(false);
   const [lInputTextWeight, setInputText] = useState('');
 
+  // Function to handle input change
   const handleInputChange = (setter) => (value) => {
     setShowResults(false);
     setter(value);
   };
 
+  // Use effect function to calculate caloric intake when all form fields are filled
   useEffect(() => {
     if (lIsFormValid) {
       calculateCaloricIntake();
@@ -132,6 +135,7 @@ function HealthGoalsScreen() {
           <TextInput
             style={styles.inputFieldForm}
             onChangeText={(text) => {
+              // Exclude unwanted characters
               let lNewText = text.replace(/[^0-9]/g, '');
               handleInputChange(lNewText);
             }}
@@ -148,8 +152,10 @@ function HealthGoalsScreen() {
               // Allow numbers and a single decimal point
               let newText = text.replace(/[^0-9\.]/g, '');
               if (newText.split('.').length > 2) {
+                // Prevent more than one dot
                 return;
               }
+              // Update the text manually
               setInputText(newText);
             }}
             keyboardType="decimal-pad" 
@@ -298,10 +304,17 @@ function FoodDatabaseScreen() {
       foodId: item.food.foodId,
       label: item.food.label,
       category: item.food.category,
-      nutrients: item.roundedNutrients,
+      nutrients: item.roundedNutrients.ENERC_KCAL,
       quantity,
     });
     setLModalVisible(true);
+    // console.log(
+    //   item.food.foodId,
+    //   item.food.label,
+    //   item.food.category,
+    //   item.roundedNutrients.ENERC_KCAL,
+    //   quantity
+    // );
   };
 
   const handleModalClose = () => {
@@ -331,7 +344,7 @@ function FoodDatabaseScreen() {
 
       Alert.alert('Succès', "L'aliment a été ajouté à votre plan de repas");
       setLSelectedFoodItem(null); 
-      setTempMealSelection(''); 
+      setTempMealSelection('');
       setLModalVisible(false);
       setSelectedDate(new Date()); 
     }
@@ -433,7 +446,80 @@ function FoodDatabaseScreen() {
 /********************************************** */
 
 function MealPlanningScreen() {
-  const { mealPlan, setMealPlan } = useContext(MealPlanContext);
+  const { lMealPlan, addMealItem, removeMealItem } = useContext(MealPlanContext);
+  const [lCurrentDate, setCurrentDate] = useState(new Date());
+  const lMealOrder = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
+
+  const handleRemoveItem = (date, mealType, foodItem) => {
+    removeMealItem(date, mealType, foodItem);
+  };
+
+  const createMealList = (selectedDate) => {
+    let mealList = [];
+    for (let date in lMealPlan) {
+      if (date === selectedDate) {
+        for (let mealType in lMealPlan[date]) {
+          lMealPlan[date][mealType].forEach((foodItem) => {
+            mealList.push({
+              date,
+              mealType,
+              foodItem,
+            });
+          });
+        }
+      }
+    }
+
+    mealList.sort((a, b) => lMealOrder.indexOf(a.mealType) - lMealOrder.indexOf(b.mealType));
+
+    return mealList;
+  };
+
+  const handleDateChange = (offset) => {
+    let newDate = new Date(lCurrentDate);
+    newDate.setDate(newDate.getDate() + offset);
+    setCurrentDate(newDate);
+  };
+
+  const meals = createMealList(lCurrentDate.toISOString().slice(0, 10));
+
+  return (
+    <View style={styles.mainMealContainer}>
+      <View style={styles.mealDateContainer}>
+        <Button title="<" onPress={() => handleDateChange(-1)} />
+        <Text>{lCurrentDate.toDateString()}</Text>
+        <Button title=">" onPress={() => handleDateChange(1)} />
+      </View>
+      {meals.map((meal, index) => (
+        <View key={index} style={styles.mealContainer}>
+          <Text style={styles.mealType}>{meal.mealType}</Text>
+          {Array.isArray(meal.foodItem) ? (
+            meal.foodItem.map((food, index) => (
+              <View key={index} style={styles.foodContainer}>
+                <Text style={styles.foodLabel}>{food.foodItem.foodItem.label}</Text>
+                <Text style={styles.foodQuantity}>{food.quantity}</Text>
+                <Text style={styles.foodCalories}>{food.foodItem.foodItem.nutrients} kcal</Text>
+                <Button
+                  title="Remove"
+                  onPress={() => handleRemoveItem(meal.date, meal.mealType, food)}
+                />
+              </View>
+            ))
+          ) : (
+            <View style={styles.foodContainer}>
+              <Text style={styles.foodLabel}>{meal.foodItem.foodItem.label}</Text>
+              <Text style={styles.foodQuantity}>{meal.foodItem.quantity}</Text>
+              <Text style={styles.foodCalories}>{meal.foodItem.foodItem.nutrients} kcal</Text>
+              <Button
+                title="Remove"
+                onPress={() => handleRemoveItem(meal.date, meal.mealType, meal.foodItem)}
+              />
+            </View>
+          )}
+        </View>
+      ))}
+    </View>
+  );
 }
 
 /********************************************** */
@@ -496,7 +582,7 @@ const styles = StyleSheet.create({
     width: 200,
     alignItems: 'center', 
     justifyContent: 'center', 
-    padding: 10, 
+    padding: 10,
   },
   buttonText: {
     color: '#fff', 
@@ -618,6 +704,38 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
+  },
+  mainMealContainer: {
+    flex: 1,
+    padding: 10,
+  },
+  mealDateContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  mealContainer: {
+    marginBottom: 10,
+  },
+  mealType: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  foodContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  foodLabel: {
+    fontSize: 16,
+  },
+  foodQuantity: {
+    fontSize: 14,
+  },
+  foodCalories: {
+    fontSize: 14,
   },
 });
 const Tab = createBottomTabNavigator();
