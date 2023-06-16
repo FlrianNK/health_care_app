@@ -308,13 +308,6 @@ function FoodDatabaseScreen() {
       quantity,
     });
     setLModalVisible(true);
-    // console.log(
-    //   item.food.foodId,
-    //   item.food.label,
-    //   item.food.category,
-    //   item.roundedNutrients.ENERC_KCAL,
-    //   quantity
-    // );
   };
 
   const handleModalClose = () => {
@@ -447,77 +440,97 @@ function FoodDatabaseScreen() {
 
 function MealPlanningScreen() {
   const { lMealPlan, addMealItem, removeMealItem } = useContext(MealPlanContext);
-  const [lCurrentDate, setCurrentDate] = useState(new Date());
-  const lMealOrder = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [modalVisible, setModalVisible] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const mealOrder = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
 
   const handleRemoveItem = (date, mealType, foodItem) => {
     removeMealItem(date, mealType, foodItem);
+    setModalVisible(false);
+  };
+
+  const handleOpenModal = (item) => {
+    setItemToDelete(item);
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
   };
 
   const createMealList = (selectedDate) => {
-    let mealList = [];
+    let mealList = {};
     for (let date in lMealPlan) {
       if (date === selectedDate) {
         for (let mealType in lMealPlan[date]) {
+          if (!mealList[mealType]) {
+            mealList[mealType] = [];
+          }
           lMealPlan[date][mealType].forEach((foodItem) => {
-            mealList.push({
-              date,
-              mealType,
-              foodItem,
-            });
+            mealList[mealType].push(foodItem);
           });
         }
       }
     }
 
-    mealList.sort((a, b) => lMealOrder.indexOf(a.mealType) - lMealOrder.indexOf(b.mealType));
-
     return mealList;
   };
 
   const handleDateChange = (offset) => {
-    let newDate = new Date(lCurrentDate);
+    let newDate = new Date(currentDate);
     newDate.setDate(newDate.getDate() + offset);
     setCurrentDate(newDate);
   };
 
-  const meals = createMealList(lCurrentDate.toISOString().slice(0, 10));
+  const meals = createMealList(currentDate.toISOString().slice(0, 10));
 
   return (
     <View style={styles.mainMealContainer}>
+      <Modal visible={modalVisible} onRequestClose={handleCloseModal}>
+        <Text>
+          Êtes-vous sûr de vouloir supprimer {itemToDelete?.foodItem.label} du repas{' '}
+          {itemToDelete?.mealType} ?
+        </Text>
+        <Button
+          title="Confirm"
+          color="blue"
+          onPress={() =>
+            handleRemoveItem(itemToDelete.date, itemToDelete.mealType, itemToDelete.foodItem)
+          }
+        />
+        <Button title="Cancel" onPress={handleCloseModal} />
+      </Modal>
       <View style={styles.mealDateContainer}>
         <Button title="<" onPress={() => handleDateChange(-1)} />
-        <Text>{lCurrentDate.toDateString()}</Text>
+        <Text>{currentDate.toDateString()}</Text>
         <Button title=">" onPress={() => handleDateChange(1)} />
       </View>
-      {meals.map((meal, index) => (
-        <View key={index} style={styles.mealContainer}>
-          <Text style={styles.mealType}>{meal.mealType}</Text>
-          {Array.isArray(meal.foodItem) ? (
-            meal.foodItem.map((food, index) => (
+      {mealOrder.map((mealType) => {
+        const foodItems = meals[mealType] || [];
+        return (
+          <View key={mealType} style={styles.mealContainer}>
+            <Text style={styles.mealType}>{mealType}</Text>
+            {foodItems.map((foodItem, index) => (
               <View key={index} style={styles.foodContainer}>
-                <Text style={styles.foodLabel}>{food.foodItem.foodItem.label}</Text>
-                <Text style={styles.foodQuantity}>{food.quantity}</Text>
-                <Text style={styles.foodCalories}>{food.foodItem.foodItem.nutrients} kcal</Text>
+                <Text style={styles.foodLabel}>{foodItem.foodItem.label}</Text>
+                <Text style={styles.foodQuantity}>{foodItem.quantity}</Text>
+                <Text style={styles.foodCalories}>{foodItem.foodItem.nutrients} kcal</Text>
                 <Button
                   title="Remove"
-                  onPress={() => handleRemoveItem(meal.date, meal.mealType, food)}
+                  onPress={() =>
+                    handleOpenModal({
+                      date: currentDate.toISOString().slice(0, 10),
+                      mealType,
+                      foodItem: foodItem.foodItem,
+                    })
+                  }
                 />
               </View>
-            ))
-          ) : (
-            <View style={styles.foodContainer}>
-              <Text style={styles.foodLabel}>{meal.foodItem.foodItem.label}</Text>
-              <Text style={styles.foodQuantity}>{meal.foodItem.quantity}</Text>
-              <Text style={styles.foodCalories}>{meal.foodItem.foodItem.nutrients} kcal</Text>
-              <Button
-                title="Remove"
-                onPress={() => handleRemoveItem(meal.date, meal.mealType, meal.foodItem)}
-              />
-            </View>
-          )}
-        </View>
-      ))}
+            ))}
+          </View>
+        );
+      })}
     </View>
   );
 }
