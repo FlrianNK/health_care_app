@@ -13,11 +13,12 @@ import {
   Modal,
   TouchableOpacity,
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Picker } from '@react-native-picker/picker';
 import { Image } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /********************************************** */
 /*               HealthGoalsScreen              */
@@ -444,6 +445,7 @@ function MealPlanningScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const mealOrder = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
+  const navigation = useNavigation();
 
   const handleRemoveItem = (date, mealType, foodItem) => {
     removeMealItem(date, mealType, foodItem);
@@ -483,7 +485,18 @@ function MealPlanningScreen() {
     setCurrentDate(newDate);
   };
 
+  const calculateTotalCalories = (meals) => {
+    let totalCalories = 0;
+    for (let mealType in meals) {
+      meals[mealType].forEach((foodItem) => {
+        totalCalories += foodItem.foodItem.nutrients * foodItem.quantity;
+      });
+    }
+    return totalCalories;
+  };
+
   const meals = createMealList(currentDate.toISOString().slice(0, 10));
+  const totalCalories = calculateTotalCalories(meals);
 
   return (
     <View style={styles.mainMealContainer}>
@@ -506,13 +519,25 @@ function MealPlanningScreen() {
         <Text>{currentDate.toDateString()}</Text>
         <Button title=">" onPress={() => handleDateChange(1)} />
       </View>
+      <Text>Total Calories: {totalCalories} kcal</Text>
       {mealOrder.map((mealType) => {
         const foodItems = meals[mealType] || [];
         return (
           <View key={mealType} style={styles.mealContainer}>
-            <Text style={styles.mealType}>{mealType}</Text>
-            {foodItems.map((foodItem, index) => (
-              <View key={index} style={styles.foodContainer}>
+            <View style={styles.mealTypeContainer}>
+              <Text style={styles.mealType}>{mealType}</Text>
+              <Button
+                title="Add Food"
+                onPress={() =>
+                  navigation.navigate('Food Database', {
+                    mealType: mealType,
+                    date: currentDate.toISOString().slice(0, 10),
+                  })
+                }
+              />
+            </View>
+            {foodItems.map((foodItem) => (
+              <View key={foodItem.foodItem.id} style={styles.foodContainer}>
                 <Text style={styles.foodLabel}>{foodItem.foodItem.label}</Text>
                 <Text style={styles.foodQuantity}>{foodItem.quantity}</Text>
                 <Text style={styles.foodCalories}>{foodItem.foodItem.nutrients} kcal</Text>
@@ -750,6 +775,12 @@ const styles = StyleSheet.create({
   foodCalories: {
     fontSize: 14,
   },
+  mealTypeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+  },
 });
 const Tab = createBottomTabNavigator();
 export const MealPlanContext = React.createContext();
@@ -780,6 +811,31 @@ export default function App() {
       return newPlan;
     });
   };
+
+  const saveMealPlan = async (mealPlan) => {
+    try {
+      await AsyncStorage.setItem('@mealPlan', JSON.stringify(mealPlan));
+    } catch (e) {
+      console.error("can't save data");
+    }
+  };
+
+  const loadMealPlan = async () => {
+    try {
+      let mealPlan = await AsyncStorage.getItem('@mealPlan');
+      if (mealPlan !== null) {
+        setLMealPlan(JSON.parse(mealPlan));
+      }
+    } catch (e) {
+      console.error("can't load data");
+    }
+  };
+  useEffect(() => {
+    loadMealPlan();
+  }, []);
+  useEffect(() => {
+    saveMealPlan(lMealPlan);
+  }, [lMealPlan]);
 
   return (
     <MealPlanContext.Provider value={{ lMealPlan, addMealItem, removeMealItem }}>
