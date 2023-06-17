@@ -13,11 +13,12 @@ import {
   Modal,
   TouchableOpacity,
 } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Picker } from '@react-native-picker/picker';
 import { Image } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /********************************************** */
 /*               HealthGoalsScreen              */
@@ -217,10 +218,10 @@ function FoodDatabaseScreen() {
   const [lFoods, setLFoods] = useState([]);
   const [lModalVisible, setLModalVisible] = useState(false);
   const [lSelectedFoodItem, setLSelectedFoodItem] = useState(null);
-  const [tempMealSelection, setTempMealSelection] = useState('');
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [quantity, setQuantity] = useState(1);
+  const [lTempMealSelection, setTempMealSelection] = useState('');
+  const [lShowDatePicker, setShowDatePicker] = useState(false);
+  const [lSelectedDate, setSelectedDate] = useState(new Date());
+  const [lQuantity, setQuantity] = useState(1);
 
   const handleInputChange = (value) => {
     setLSearchQuery(value);
@@ -261,6 +262,7 @@ function FoodDatabaseScreen() {
         };
 
         // Create a unique identifier
+        //console.log(foodId);
         let identifier = `${foodId}-${label}-${category}-${roundedNutrients.ENERC_KCAL}-${roundedNutrients.CHOCDF}-${roundedNutrients.FAT}-${roundedNutrients.FIBTG}-${roundedNutrients.PROCNT}`;
 
         // If this is a new identifier, store the item and roundedNutrients in the map
@@ -301,14 +303,14 @@ function FoodDatabaseScreen() {
 
   const addToMealPlan = (item) => {
     setLSelectedFoodItem({
-      foodId: item.food.foodId,
+      foodId: `${item.food.foodId}-${item.food.label}-${item.food.category}-${item.roundedNutrients.ENERC_KCAL}-${item.roundedNutrients.CHOCDF}-${item.roundedNutrients.FAT}-${item.roundedNutrients.FIBTG}-${item.roundedNutrients.PROCNT}`,
       label: item.food.label,
       category: item.food.category,
       nutrients: item.roundedNutrients.ENERC_KCAL,
-      quantity,
+      quantity: lQuantity,
     });
     setLModalVisible(true);
-    // console.log(
+      // console.log(
     //   item.food.foodId,
     //   item.food.label,
     //   item.food.category,
@@ -332,19 +334,19 @@ function FoodDatabaseScreen() {
   };
 
   const handleConfirmation = () => {
-    if (!selectedDate || !tempMealSelection) {
+    if (!lSelectedDate || !lTempMealSelection) {
       Alert.alert('Erreur', 'Veuillez choisir un jour et un repas');
     } else {
       // Convert the date to a string
-      let selectedDateString = selectedDate.toISOString().split('T')[0];
+      let selectedDateString = lSelectedDate.toISOString().split('T')[0];
 
       // Add the selected food item to the meal plan
-      addMealItem(selectedDateString, tempMealSelection, lSelectedFoodItem, quantity);
-      console.log(selectedDateString, tempMealSelection, lSelectedFoodItem, quantity);
+      addMealItem(selectedDateString, lTempMealSelection, lSelectedFoodItem, lQuantity);
+      //console.log(selectedDateString, lTempMealSelection, lSelectedFoodItem, lQuantity);
 
       Alert.alert('Succès', "L'aliment a été ajouté à votre plan de repas");
       setLSelectedFoodItem(null); 
-      setTempMealSelection('');
+      setTempMealSelection(''); 
       setLModalVisible(false);
       setSelectedDate(new Date()); 
     }
@@ -373,14 +375,14 @@ function FoodDatabaseScreen() {
             <Text style={styles.modalText}>Select the day and meal for this item:</Text>
             <TouchableOpacity
               style={styles.ButtonDate}
-              onPress={() => setShowDatePicker(!showDatePicker)}>
-              <Text style={styles.ButtonDateText}>{`${selectedDate.toDateString()}`}</Text>
+              onPress={() => setShowDatePicker(!lShowDatePicker)}>
+              <Text style={styles.ButtonDateText}>{`${lSelectedDate.toDateString()}`}</Text>
             </TouchableOpacity>
 
-            {showDatePicker && (
+            {lShowDatePicker && (
               <DateTimePicker
                 testID="dateTimePicker"
-                value={selectedDate}
+                value={lSelectedDate}
                 mode={'date'}
                 minimumDate={new Date()}
                 is24Hour={true}
@@ -388,7 +390,7 @@ function FoodDatabaseScreen() {
                 onChange={handleDateChange}
               />
             )}
-            <Picker selectedValue={tempMealSelection} onValueChange={handleMealSelectionTemp}>
+            <Picker selectedValue={lTempMealSelection} onValueChange={handleMealSelectionTemp}>
               <Picker.Item label="Select the meal" value={null} enabled={false} />
               <Picker.Item label="Breakfast" value="Breakfast" />
               <Picker.Item label="Lunch" value="Lunch" />
@@ -401,7 +403,7 @@ function FoodDatabaseScreen() {
               <View style={styles.quantityContainer}>
                 <TextInput
                   style={styles.quantityInput}
-                  value={String(quantity)}
+                  value={String(lQuantity)}
                   onChangeText={(text) => {
                     const newQuantity = Number(text);
                     if (!Number.isNaN(newQuantity) && newQuantity > 0) {
@@ -447,77 +449,122 @@ function FoodDatabaseScreen() {
 
 function MealPlanningScreen() {
   const { lMealPlan, addMealItem, removeMealItem } = useContext(MealPlanContext);
-  const [lCurrentDate, setCurrentDate] = useState(new Date());
-  const lMealOrder = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [modalVisible, setModalVisible] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const mealOrder = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
+  const navigation = useNavigation();
 
   const handleRemoveItem = (date, mealType, foodItem) => {
     removeMealItem(date, mealType, foodItem);
+    setModalVisible(false);
+  };
+
+  const handleOpenModal = (item) => {
+    setItemToDelete(item);
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
   };
 
   const createMealList = (selectedDate) => {
-    let mealList = [];
+    let mealList = {};
     for (let date in lMealPlan) {
       if (date === selectedDate) {
         for (let mealType in lMealPlan[date]) {
+          if (!mealList[mealType]) {
+            mealList[mealType] = [];
+          }
           lMealPlan[date][mealType].forEach((foodItem) => {
-            mealList.push({
-              date,
-              mealType,
-              foodItem,
-            });
+            mealList[mealType].push(foodItem);
           });
         }
       }
     }
 
-    mealList.sort((a, b) => lMealOrder.indexOf(a.mealType) - lMealOrder.indexOf(b.mealType));
-
     return mealList;
   };
 
   const handleDateChange = (offset) => {
-    let newDate = new Date(lCurrentDate);
+    let newDate = new Date(currentDate);
     newDate.setDate(newDate.getDate() + offset);
     setCurrentDate(newDate);
   };
 
-  const meals = createMealList(lCurrentDate.toISOString().slice(0, 10));
+  const calculateTotalCalories = (meals) => {
+    let totalCalories = 0;
+    for (let mealType in meals) {
+      meals[mealType].forEach((foodItem) => {
+        totalCalories += foodItem.foodItem.nutrients * foodItem.quantity;
+      });
+    }
+    return totalCalories;
+  };
+
+  const meals = createMealList(currentDate.toISOString().slice(0, 10));
+  const totalCalories = calculateTotalCalories(meals);
 
   return (
     <View style={styles.mainMealContainer}>
+      <Modal visible={modalVisible} onRequestClose={handleCloseModal}>
+        <Text>
+          Êtes-vous sûr de vouloir supprimer {itemToDelete?.foodItem.label} du repas{' '}
+          {itemToDelete?.mealType} ?
+        </Text>
+        <Button
+          title="Confirm"
+          color="blue"
+          onPress={() =>
+            handleRemoveItem(itemToDelete.date, itemToDelete.mealType, itemToDelete.foodItem)
+          }
+        />
+        <Button title="Cancel" onPress={handleCloseModal} />
+      </Modal>
       <View style={styles.mealDateContainer}>
         <Button title="<" onPress={() => handleDateChange(-1)} />
-        <Text>{lCurrentDate.toDateString()}</Text>
+        <Text>{currentDate.toDateString()}</Text>
         <Button title=">" onPress={() => handleDateChange(1)} />
       </View>
-      {meals.map((meal, index) => (
-        <View key={index} style={styles.mealContainer}>
-          <Text style={styles.mealType}>{meal.mealType}</Text>
-          {Array.isArray(meal.foodItem) ? (
-            meal.foodItem.map((food, index) => (
-              <View key={index} style={styles.foodContainer}>
-                <Text style={styles.foodLabel}>{food.foodItem.foodItem.label}</Text>
-                <Text style={styles.foodQuantity}>{food.quantity}</Text>
-                <Text style={styles.foodCalories}>{food.foodItem.foodItem.nutrients} kcal</Text>
-                <Button
-                  title="Remove"
-                  onPress={() => handleRemoveItem(meal.date, meal.mealType, food)}
-                />
-              </View>
-            ))
-          ) : (
-            <View style={styles.foodContainer}>
-              <Text style={styles.foodLabel}>{meal.foodItem.foodItem.label}</Text>
-              <Text style={styles.foodQuantity}>{meal.foodItem.quantity}</Text>
-              <Text style={styles.foodCalories}>{meal.foodItem.foodItem.nutrients} kcal</Text>
+      <Text>Total Calories: {totalCalories} kcal</Text>
+      {mealOrder.map((mealType) => {
+        const foodItems = meals[mealType] || [];
+        return (
+          //console.log(foodItems.foodId),
+          <View key={mealType} style={styles.mealContainer}>
+            <View style={styles.mealTypeContainer}>
+              <Text style={styles.mealType}>{mealType}</Text>
               <Button
-                title="Remove"
-                onPress={() => handleRemoveItem(meal.date, meal.mealType, meal.foodItem)}
+                title="Add Food"
+                onPress={() =>
+                  navigation.navigate('Food Database', {
+                    mealType: mealType,
+                    date: currentDate.toISOString().slice(0, 10),
+                  })
+                }
               />
             </View>
-          )}
-        </View>
-      ))}
+            {foodItems.map((foodItem) => (
+              <View key={foodItem.foodItem.foodId} style={styles.foodContainer}>
+                <Text style={styles.foodLabel}>{foodItem.foodItem.label}</Text>
+                <Text style={styles.foodQuantity}>{foodItem.quantity}</Text>
+                <Text style={styles.foodCalories}>{foodItem.foodItem.nutrients} kcal</Text>
+                <Button
+                  title="Remove"
+                  onPress={() =>
+                    handleOpenModal({
+                      date: currentDate.toISOString().slice(0, 10),
+                      mealType,
+                      foodItem: foodItem.foodItem,
+                    })
+                  }
+                />
+              </View>
+            ))}
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -581,8 +628,8 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     width: 200,
     alignItems: 'center', 
-    justifyContent: 'center', 
-    padding: 10,
+    justifyContent: 'center',
+    padding: 10, 
   },
   buttonText: {
     color: '#fff', 
@@ -606,7 +653,7 @@ const styles = StyleSheet.create({
   },
   modalText: {
     fontSize: 16,
-    marginBottom: 20, 
+    marginBottom: 20,
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -737,6 +784,12 @@ const styles = StyleSheet.create({
   foodCalories: {
     fontSize: 14,
   },
+  mealTypeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+  },
 });
 const Tab = createBottomTabNavigator();
 export const MealPlanContext = React.createContext();
@@ -750,7 +803,18 @@ export default function App() {
       if (!newPlan[date]) newPlan[date] = {};
       if (!newPlan[date][mealType]) newPlan[date][mealType] = [];
 
-      newPlan[date][mealType].push({ foodItem, quantity });
+      //Vérifie si l'aliment existe déjà
+      const existingItemIndex = newPlan[date][mealType].findIndex(
+        (item) => item.foodItem.foodId === foodItem.foodId
+      );
+
+      // si oui, on incrémente
+      if (existingItemIndex !== -1) {
+        newPlan[date][mealType][existingItemIndex].quantity += quantity;
+      } else {
+        // si non, on l'ajoute
+        newPlan[date][mealType].push({ foodItem, quantity });
+      }
 
       return newPlan;
     });
@@ -767,6 +831,35 @@ export default function App() {
       return newPlan;
     });
   };
+
+  const saveMealPlan = async (mealPlan) => {
+    try {
+      await AsyncStorage.setItem('@mealPlan', JSON.stringify(mealPlan));
+    } catch (e) {
+      console.error("can't save data");
+    }
+  };
+
+  const loadMealPlan = async () => {
+    try {
+      let mealPlan = await AsyncStorage.getItem('@mealPlan');
+      if (mealPlan !== null) {
+        setLMealPlan(JSON.parse(mealPlan));
+      }
+    } catch (e) {
+      console.error("can't load data");
+    }
+  };
+
+  //Charge le plan de repas lors du montage du composant
+  useEffect(() => {
+    loadMealPlan();
+  }, []);
+
+  //Enregirstre le plan de repas à chaque modifications
+  useEffect(() => {
+    saveMealPlan(lMealPlan);
+  }, [lMealPlan]);
 
   return (
     <MealPlanContext.Provider value={{ lMealPlan, addMealItem, removeMealItem }}>
