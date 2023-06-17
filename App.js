@@ -218,10 +218,10 @@ function FoodDatabaseScreen() {
   const [lFoods, setLFoods] = useState([]);
   const [lModalVisible, setLModalVisible] = useState(false);
   const [lSelectedFoodItem, setLSelectedFoodItem] = useState(null);
-  const [tempMealSelection, setTempMealSelection] = useState('');
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [quantity, setQuantity] = useState(1);
+  const [lTempMealSelection, setTempMealSelection] = useState('');
+  const [lShowDatePicker, setShowDatePicker] = useState(false);
+  const [lSelectedDate, setSelectedDate] = useState(new Date());
+  const [lQuantity, setQuantity] = useState(1);
 
   const handleInputChange = (value) => {
     setLSearchQuery(value);
@@ -306,7 +306,7 @@ function FoodDatabaseScreen() {
       label: item.food.label,
       category: item.food.category,
       nutrients: item.roundedNutrients.ENERC_KCAL,
-      quantity,
+      quantity: lQuantity,
     });
     setLModalVisible(true);
   };
@@ -326,15 +326,15 @@ function FoodDatabaseScreen() {
   };
 
   const handleConfirmation = () => {
-    if (!selectedDate || !tempMealSelection) {
+    if (!lSelectedDate || !lTempMealSelection) {
       Alert.alert('Erreur', 'Veuillez choisir un jour et un repas');
     } else {
       // Convert the date to a string
-      let selectedDateString = selectedDate.toISOString().split('T')[0];
+      let selectedDateString = lSelectedDate.toISOString().split('T')[0];
 
       // Add the selected food item to the meal plan
-      addMealItem(selectedDateString, tempMealSelection, lSelectedFoodItem, quantity);
-      console.log(selectedDateString, tempMealSelection, lSelectedFoodItem, quantity);
+      addMealItem(selectedDateString, lTempMealSelection, lSelectedFoodItem, lQuantity);
+      console.log(selectedDateString, lTempMealSelection, lSelectedFoodItem, lQuantity);
 
       Alert.alert('Succès', "L'aliment a été ajouté à votre plan de repas");
       setLSelectedFoodItem(null); 
@@ -367,14 +367,14 @@ function FoodDatabaseScreen() {
             <Text style={styles.modalText}>Select the day and meal for this item:</Text>
             <TouchableOpacity
               style={styles.ButtonDate}
-              onPress={() => setShowDatePicker(!showDatePicker)}>
-              <Text style={styles.ButtonDateText}>{`${selectedDate.toDateString()}`}</Text>
+              onPress={() => setShowDatePicker(!lShowDatePicker)}>
+              <Text style={styles.ButtonDateText}>{`${lSelectedDate.toDateString()}`}</Text>
             </TouchableOpacity>
 
-            {showDatePicker && (
+            {lShowDatePicker && (
               <DateTimePicker
                 testID="dateTimePicker"
-                value={selectedDate}
+                value={lSelectedDate}
                 mode={'date'}
                 minimumDate={new Date()}
                 is24Hour={true}
@@ -382,7 +382,7 @@ function FoodDatabaseScreen() {
                 onChange={handleDateChange}
               />
             )}
-            <Picker selectedValue={tempMealSelection} onValueChange={handleMealSelectionTemp}>
+            <Picker selectedValue={lTempMealSelection} onValueChange={handleMealSelectionTemp}>
               <Picker.Item label="Select the meal" value={null} enabled={false} />
               <Picker.Item label="Breakfast" value="Breakfast" />
               <Picker.Item label="Lunch" value="Lunch" />
@@ -395,7 +395,7 @@ function FoodDatabaseScreen() {
               <View style={styles.quantityContainer}>
                 <TextInput
                   style={styles.quantityInput}
-                  value={String(quantity)}
+                  value={String(lQuantity)}
                   onChangeText={(text) => {
                     const newQuantity = Number(text);
                     if (!Number.isNaN(newQuantity) && newQuantity > 0) {
@@ -794,7 +794,16 @@ export default function App() {
       if (!newPlan[date]) newPlan[date] = {};
       if (!newPlan[date][mealType]) newPlan[date][mealType] = [];
 
-      newPlan[date][mealType].push({ foodItem, quantity });
+      const existingItemIndex = newPlan[date][mealType].findIndex(
+        (item) => item.foodItem.foodId === foodItem.foodId
+      );
+
+      if (existingItemIndex !== -1) {
+        newPlan[date][mealType][existingItemIndex].quantity += quantity;
+      } else {
+        // si non, on l'ajoute
+        newPlan[date][mealType].push({ foodItem, quantity });
+      }
 
       return newPlan;
     });
@@ -830,9 +839,11 @@ export default function App() {
       console.error("can't load data");
     }
   };
+
   useEffect(() => {
     loadMealPlan();
   }, []);
+
   useEffect(() => {
     saveMealPlan(lMealPlan);
   }, [lMealPlan]);
