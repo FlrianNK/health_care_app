@@ -159,8 +159,8 @@ function HealthGoalsScreen() {
               // Update the text manually
               setInputText(newText);
             }}
-            keyboardType="decimal-pad" 
-            maxLength={6} 
+            keyboardType="decimal-pad" // Use decimal-pad to allow both numbers and decimal point
+            maxLength={6} // Allow up to 3 digits before and after decimal point
           />
           <Text style={styles.label}>Activity Level:</Text>
           <Picker
@@ -309,14 +309,8 @@ function FoodDatabaseScreen() {
       nutrients: item.roundedNutrients.ENERC_KCAL,
       quantity: lQuantity,
     });
+    //console.log(item.food.foodId);
     setLModalVisible(true);
-      // console.log(
-    //   item.food.foodId,
-    //   item.food.label,
-    //   item.food.category,
-    //   item.roundedNutrients.ENERC_KCAL,
-    //   quantity
-    // );
   };
 
   const handleModalClose = () => {
@@ -345,10 +339,10 @@ function FoodDatabaseScreen() {
       //console.log(selectedDateString, lTempMealSelection, lSelectedFoodItem, lQuantity);
 
       Alert.alert('Succès', "L'aliment a été ajouté à votre plan de repas");
-      setLSelectedFoodItem(null); 
-      setTempMealSelection(''); 
+      setLSelectedFoodItem(null); // Reset the selectedFoodItem state after adding
+      setTempMealSelection(''); // Reset the tempMealSelection state after adding
       setLModalVisible(false);
-      setSelectedDate(new Date()); 
+      setSelectedDate(new Date()); // Reset the selected date to today after adding
     }
   };
 
@@ -611,10 +605,10 @@ const styles = StyleSheet.create({
   image: {
     width: 70,
     height: 70,
-    borderRadius: 35, 
-    position: 'absolute', 
-    right: 0, 
-    top: -80, 
+    borderRadius: 35, // Pour rendre l'image circulaire
+    position: 'absolute', // Position absolue par rapport à son conteneur
+    right: 0, // Alignement à droite
+    top: -80, // Moitié de la hauteur de l'image pour placer la moitié de l'image hors de la carte
   },
 
   foodTitle: {
@@ -627,12 +621,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 15,
     width: 200,
-    alignItems: 'center', 
-    justifyContent: 'center',
-    padding: 10, 
+    alignItems: 'center', // center the text horizontally
+    justifyContent: 'center', // center the text vertically
+    padding: 10, // give some space around the text
   },
   buttonText: {
-    color: '#fff', 
+    color: '#fff', // make the text white
   },
   question: {
     fontSize: 20,
@@ -643,17 +637,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)', 
+    backgroundColor: 'rgba(0,0,0,0.5)', // semi-transparent background
   },
   modalContent: {
     backgroundColor: 'white',
     padding: 20,
     borderRadius: 10,
-    width: '80%', 
+    width: '80%', // set to a percentage of screen width
   },
   modalText: {
     fontSize: 16,
-    marginBottom: 20,
+    marginBottom: 20, // add some space below the text
   },
   buttonContainer: {
     flexDirection: 'row',
