@@ -43,10 +43,8 @@ function HealthGoalsScreen() {
     lHealthGoal !== null &&
     lHealthGoal !== 'Select your health goal';
 
-  // Setting up state for caloric intake and show results
   const [lCaloricIntake, setCaloricIntake] = useState(0);
   const [lShowResults, setShowResults] = useState(false);
-  const [lInputTextWeight, setInputText] = useState('');
 
   // Function to handle input change
   const handleInputChange = (setter) => (value) => {
@@ -61,7 +59,6 @@ function HealthGoalsScreen() {
     }
   }, [lAge, lGender, lHeight, lWeight, lActivityLevel, lHealthGoal]);
 
-  // Function to calculate BMR
   const calculateBMR = () => {
     let lBMR;
     if (lGender === 'male') {
@@ -109,15 +106,13 @@ function HealthGoalsScreen() {
           <Text style={styles.label}>Age:</Text>
           <TextInput
             style={styles.inputFieldForm}
-            onChangeText={(text) => {
-              // Exclude unwanted characters
-              let lNewText = text.replace(/[^0-9]/g, '');
-              handleInputChange(lNewText);
-            }}
+            onChangeText={handleInputChange((text) => {
+              let lAge = text.replace(/[^0-9]/g, '');
+              setAge(lAge);
+            })}
             value={lAge}
             keyboardType="numeric"
             maxLength={3}
-            minLength={1}
           />
 
           <Text style={styles.label}>Gender:</Text>
@@ -125,42 +120,38 @@ function HealthGoalsScreen() {
             style={styles.picker}
             selectedValue={lGender}
             prompt="Select your gender"
-            onValueChange={handleInputChange(
-              (itemValue) => itemValue !== 'default' && setGender(itemValue)
-            )}>
+            onValueChange={(itemValue) => itemValue !== 'default' && setGender(itemValue)}>
             <Picker.Item label="Select your gender" value="default" />
             <Picker.Item label="Male" value="male" />
             <Picker.Item label="Female" value="female" />
           </Picker>
+
           <Text style={styles.label}>Height (cm):</Text>
           <TextInput
             style={styles.inputFieldForm}
-            onChangeText={(text) => {
-              // Exclude unwanted characters
-              let lNewText = text.replace(/[^0-9]/g, '');
-              handleInputChange(lNewText);
-            }}
+            onChangeText={handleInputChange((text) => {
+              let lHeight = text.replace(/[^0-9]/g, '');
+              setHeight(lHeight);
+            })}
             value={lHeight}
             keyboardType="numeric"
             maxLength={3}
-            minLength={1}
           />
+
           <Text style={styles.label}>Weight (kg):</Text>
           <TextInput
             style={styles.inputFieldForm}
-            value={lInputTextWeight}
-            onChangeText={(text) => {
-              // Allow numbers and a single decimal point
+            value={lWeight}
+            onChangeText={handleInputChange((text) => {
               let newText = text.replace(/[^0-9\.]/g, '');
               if (newText.split('.').length > 2) {
-                // Prevent more than one dot
                 return;
               }
               // Update the text manually
-              setInputText(newText);
-            }}
-            keyboardType="decimal-pad" // Use decimal-pad to allow both numbers and decimal point
-            maxLength={6} // Allow up to 3 digits before and after decimal point
+              setWeight(newText);
+            })}
+            keyboardType="decimal-pad"
+            maxLength={6}
           />
           <Text style={styles.label}>Activity Level:</Text>
           <Picker
@@ -190,13 +181,17 @@ function HealthGoalsScreen() {
             <Picker.Item label="Weight Maintenance" value="maintenance" />
             <Picker.Item label="Weight Gain" value="gain" />
           </Picker>
-          <Button
-            title="Submit"
+          <TouchableOpacity
+            style={styles.ButtonFormSubmit}
             onPress={() => {
-              setShowResults(true);
-            }}
-            disabled={!lIsFormValid}
-          />
+              if (lIsFormValid) {
+                setShowResults(true);
+              } else {
+                Alert.alert('Invalid form', 'Please make sure all fields are filled');
+              }
+            }}>
+            <Text style={styles.buttonTextSubmit}>Submit</Text>
+          </TouchableOpacity>
         </ScrollView>
         {lShowResults && (
           <View style={styles.resultContainer}>
@@ -292,11 +287,12 @@ function FoodDatabaseScreen() {
         <Text>Fat: {item.roundedNutrients.FAT} g</Text>
         <Text>Fiber: {item.roundedNutrients.FIBTG} g</Text>
         <Text>Protein: {item.roundedNutrients.PROCNT} g</Text>
-        <Button
-          style={styles.button}
+        <TouchableOpacity
+          style={styles.ButtonAddToMealPlan}
           title="Add to Meal Plan"
-          onPress={() => addToMealPlan(item)}
-        />
+          onPress={() => addToMealPlan(item)}>
+          <Text style={styles.buttonText}>Add to Meal Plan</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -311,6 +307,8 @@ function FoodDatabaseScreen() {
     });
     //console.log(item.food.foodId);
     setLModalVisible(true);
+    setQuantity(1);
+    setSelectedDate(new Date());
   };
 
   const handleModalClose = () => {
@@ -339,10 +337,10 @@ function FoodDatabaseScreen() {
       //console.log(selectedDateString, lTempMealSelection, lSelectedFoodItem, lQuantity);
 
       Alert.alert('Succès', "L'aliment a été ajouté à votre plan de repas");
-      setLSelectedFoodItem(null); // Reset the selectedFoodItem state after adding
-      setTempMealSelection(''); // Reset the tempMealSelection state after adding
+      setLSelectedFoodItem(null);
+      setTempMealSelection('');
       setLModalVisible(false);
-      setSelectedDate(new Date()); // Reset the selected date to today after adding
+      setSelectedDate(new Date());
     }
   };
 
@@ -354,7 +352,7 @@ function FoodDatabaseScreen() {
         style={styles.input}
         placeholder="Search for a food..."
       />
-      <TouchableOpacity style={styles.button} onPress={handleSearch}>
+      <TouchableOpacity style={styles.buttonSearch} onPress={handleSearch}>
         <Text style={styles.buttonText}>Search</Text>
       </TouchableOpacity>
       <FlatList
@@ -423,8 +421,10 @@ function FoodDatabaseScreen() {
             </View>
 
             <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.buttonConfirm} onPress={handleConfirmation}>
-                <Text style={styles.buttonConfirmText}>Confirm</Text>
+              <TouchableOpacity
+                style={styles.buttonConfirmFoodDatabase}
+                onPress={handleConfirmation}>
+                <Text style={styles.buttonText}>Confirm</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.buttonCancel} onPress={handleModalClose}>
                 <Text style={styles.buttonCancelText}>Cancel</Text>
@@ -448,6 +448,7 @@ function MealPlanningScreen() {
   const [itemToDelete, setItemToDelete] = useState(null);
   const mealOrder = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
   const navigation = useNavigation();
+  const removeIcon = require('./assets/bin.png');
 
   const handleRemoveItem = (date, mealType, foodItem) => {
     removeMealItem(date, mealType, foodItem);
@@ -502,63 +503,89 @@ function MealPlanningScreen() {
 
   return (
     <View style={styles.mainMealContainer}>
-      <Modal visible={modalVisible} onRequestClose={handleCloseModal}>
-        <Text>
-          Êtes-vous sûr de vouloir supprimer {itemToDelete?.foodItem.label} du repas{' '}
-          {itemToDelete?.mealType} ?
-        </Text>
-        <Button
-          title="Confirm"
-          color="blue"
-          onPress={() =>
-            handleRemoveItem(itemToDelete.date, itemToDelete.mealType, itemToDelete.foodItem)
-          }
-        />
-        <Button title="Cancel" onPress={handleCloseModal} />
+      <Modal visible={modalVisible} onRequestClose={handleCloseModal} transparent>
+        <View style={styles.mealPlanningModalContainer}>
+          <View style={styles.mealPlanningModalContent}>
+            <Text style={styles.mealPlanningModalText}>
+              Are you sure you want to remove {itemToDelete?.foodItem.label} from{' '}
+              {itemToDelete?.mealType} ?
+            </Text>
+            <View style={styles.mealPlanningModalButtonContainer}>
+              <TouchableOpacity
+                style={styles.mealPlanningModalButtonConfirm}
+                onPress={() =>
+                  handleRemoveItem(itemToDelete.date, itemToDelete.mealType, itemToDelete.foodItem)
+                }>
+                <Text style={styles.mealPlanningButtonText}>Confirm</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.mealPlanningModalButtonCancel}
+                onPress={handleCloseModal}>
+                <Text style={styles.mealPlanningButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
       <View style={styles.mealDateContainer}>
-        <Button title="<" onPress={() => handleDateChange(-1)} />
-        <Text>{currentDate.toDateString()}</Text>
-        <Button title=">" onPress={() => handleDateChange(1)} />
+        <TouchableOpacity
+          style={styles.buttonChangeDateMealPlanning}
+          onPress={() => handleDateChange(-1)}>
+          <Text style={styles.buttonText}>&lt;</Text>
+        </TouchableOpacity>
+        <Text style={styles.dateTextMealPlanning}>{currentDate.toDateString()}</Text>
+        <TouchableOpacity
+          style={styles.buttonChangeDateMealPlanning}
+          onPress={() => handleDateChange(1)}>
+          <Text style={styles.buttonText}>&gt;</Text>
+        </TouchableOpacity>
       </View>
       <Text>Total Calories: {totalCalories} kcal</Text>
-      {mealOrder.map((mealType) => {
-        const foodItems = meals[mealType] || [];
-        return (
-          //console.log(foodItems.foodId),
-          <View key={mealType} style={styles.mealContainer}>
-            <View style={styles.mealTypeContainer}>
-              <Text style={styles.mealType}>{mealType}</Text>
-              <Button
-                title="Add Food"
-                onPress={() =>
-                  navigation.navigate('Food Database', {
-                    mealType: mealType,
-                    date: currentDate.toISOString().slice(0, 10),
-                  })
-                }
-              />
-            </View>
-            {foodItems.map((foodItem) => (
-              <View key={foodItem.foodItem.foodId} style={styles.foodContainer}>
-                <Text style={styles.foodLabel}>{foodItem.foodItem.label}</Text>
-                <Text style={styles.foodQuantity}>{foodItem.quantity}</Text>
-                <Text style={styles.foodCalories}>{foodItem.foodItem.nutrients} kcal</Text>
-                <Button
-                  title="Remove"
+      <ScrollView>
+        {mealOrder.map((mealType) => {
+          const foodItems = meals[mealType] || [];
+          return (
+            //console.log(foodItems.foodId),
+            <View key={mealType} style={styles.mealContainer}>
+              <View style={styles.mealTypeContainer}>
+                <Text style={styles.mealType}>{mealType}</Text>
+                <TouchableOpacity
+                  style={styles.buttonAddFoodMealPlanning}
                   onPress={() =>
-                    handleOpenModal({
+                    navigation.navigate('Food Database', {
+                      mealType: mealType,
                       date: currentDate.toISOString().slice(0, 10),
-                      mealType,
-                      foodItem: foodItem.foodItem,
                     })
-                  }
-                />
+                  }>
+                  <Text style={styles.buttonText}> + Add Food</Text>
+                </TouchableOpacity>
               </View>
-            ))}
-          </View>
-        );
-      })}
+              {foodItems.map((foodItem) => (
+                <View key={foodItem.foodItem.foodId} style={styles.foodContainer}>
+                  <Text style={styles.foodLabel}>{foodItem.foodItem.label}</Text>
+                  <View style={styles.foodDetailsContainer}>
+                    <View>
+                      <Text style={styles.foodCalories}>{foodItem.foodItem.nutrients} kcal</Text>
+                      <Text style={styles.foodQuantity}>Quantity: {foodItem.quantity}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.mealPlanningButtonRemove}
+                      onPress={() =>
+                        handleOpenModal({
+                          date: currentDate.toISOString().slice(0, 10),
+                          mealType,
+                          foodItem: foodItem.foodItem,
+                        })
+                      }>
+                      <Image source={removeIcon} style={{ width: 20, height: 20 }} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }
@@ -568,6 +595,11 @@ function MealPlanningScreen() {
 /********************************************** */
 
 const styles = StyleSheet.create({
+  logo: {
+    color: '#000000',
+    width: 10,
+    height: 10,
+  },
   scrollview: {
     paddingRight: 10,
   },
@@ -581,7 +613,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 10,
     marginBottom: 10,
-    color: '#293FA6',
+    color: '#212121',
   },
   inputFieldForm: {
     borderWidth: 1.5,
@@ -597,57 +629,72 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     overflow: 'hidden',
   },
-  logo: {
-    color: '#000000',
-    width: 10,
-    height: 10,
+  ButtonFormSubmit: {
+    backgroundColor: '#7ED9C4',
+    alignSelf: 'center',
+    borderRadius: 20,
+    padding: 9,
+    width: 150,
+    justifyContent: 'center',
   },
+  buttonTextSubmit: {
+    color: '#47424B',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+
   image: {
     width: 70,
     height: 70,
-    borderRadius: 35, // Pour rendre l'image circulaire
-    position: 'absolute', // Position absolue par rapport à son conteneur
-    right: 0, // Alignement à droite
-    top: -80, // Moitié de la hauteur de l'image pour placer la moitié de l'image hors de la carte
+    borderRadius: 35,
+    position: 'absolute',
+    right: 0,
+    top: -80,
   },
 
   foodTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    marginBottom: 10,
   },
-  button: {
-    backgroundColor: '#293FA6',
+  buttonSearch: {
+    backgroundColor: '#F4D484',
     borderRadius: 50,
     marginTop: 10,
     marginBottom: 15,
     width: 200,
-    alignItems: 'center', // center the text horizontally
-    justifyContent: 'center', // center the text vertically
-    padding: 10, // give some space around the text
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+  },
+  ButtonAddToMealPlan: {
+    backgroundColor: '#F4D484',
+    borderRadius: 50,
+    marginTop: 15,
+    marginBottom: 15,
+    width: 200,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
   },
   buttonText: {
-    color: '#fff', // make the text white
-  },
-  question: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 15,
+    color: '#47424B',
   },
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)', // semi-transparent background
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
     backgroundColor: 'white',
     padding: 20,
     borderRadius: 10,
-    width: '80%', // set to a percentage of screen width
+    width: '80%',
   },
   modalText: {
     fontSize: 16,
-    marginBottom: 20, // add some space below the text
+    marginBottom: 20,
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -665,18 +712,14 @@ const styles = StyleSheet.create({
   buttonCancelText: {
     color: '#000',
   },
-  buttonConfirm: {
-    backgroundColor: '#293FA6',
-    borderColor: '#293FA6',
+  buttonConfirmFoodDatabase: {
+    backgroundColor: '#F4D484',
+    borderColor: '#F4D484',
     borderWidth: 1,
     borderRadius: 5,
     padding: 10,
     marginRight: 5,
   },
-  buttonConfirmText: {
-    color: '#fff',
-  },
-
   ButtonDate: {
     borderWidth: 1,
     borderColor: '#000',
@@ -692,6 +735,15 @@ const styles = StyleSheet.create({
 
   ButtonDateText: {
     color: '#000',
+  },
+
+  buttonConfirmMealPlanning: {
+    backgroundColor: '#9C27B0',
+    borderColor: '#9C27B0',
+    borderWidth: 1,
+    borderRadius: 5,
+    padding: 10,
+    marginRight: 5,
   },
   card: {
     borderRadius: 6,
@@ -735,7 +787,7 @@ const styles = StyleSheet.create({
     width: 50,
   },
   quantityButton: {
-    backgroundColor: '#293FA6',
+    backgroundColor: '#F4D484',
     padding: 0,
     width: 20,
     height: 20,
@@ -743,46 +795,140 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  buttonText: {
-    color: '#fff',
-  },
   mainMealContainer: {
     flex: 1,
     padding: 10,
   },
   mealDateContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
   },
+  dateTextMealPlanning: {
+    marginHorizontal: 20,
+  },
   mealContainer: {
     marginBottom: 10,
+  },
+  buttonChangeDateMealPlanning: {
+    backgroundColor: '#B8A1E3',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  buttonAddFoodMealPlanning: {
+    backgroundColor: '#B8A1E3',
+    borderRadius: 50,
+    width: 120,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 2,
   },
   mealType: {
     fontSize: 20,
     fontWeight: 'bold',
   },
   foodContainer: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 5,
+    alignItems: 'flex-start',
+    padding: 10,
+    marginVertical: 5,
+    borderRadius: 10,
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: 'black',
   },
   foodLabel: {
     fontSize: 16,
+    fontWeight: 'bold',
   },
   foodQuantity: {
+    margin: 3,
     fontSize: 14,
   },
   foodCalories: {
-    fontSize: 14,
+    margin: 3,
+    fontSize: 15,
   },
   mealTypeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 10,
+  },
+  mealPlanningButtonRemove: {
+    backgroundColor: '#F16262',
+    borderRadius: 25,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 'auto',
+  },
+  mealPlanningRemoveText: {
+    color: '#fff',
+    fontSize: 13,
+  },
+  foodDetailsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 5,
+  },
+
+  mealPlanningModalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  mealPlanningModalContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
+  },
+  mealPlanningModalText: {
+    textAlign: 'center',
+    fontSize: 17,
+  },
+  mealPlanningModalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    width: '100%',
+  },
+  mealPlanningModalButtonConfirm: {
+    backgroundColor: '#A483E1',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 5,
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: 5,
+  },
+  mealPlanningModalButtonCancel: {
+    borderColor: '#000000',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 5,
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: 5,
+  },
+  mealPlanningButtonText: {
+    color: '#000000',
+    fontSize: 13,
   },
 });
 const Tab = createBottomTabNavigator();
@@ -858,15 +1004,18 @@ export default function App() {
   return (
     <MealPlanContext.Provider value={{ lMealPlan, addMealItem, removeMealItem }}>
       <NavigationContainer>
-        <Tab.Navigator>
+        <Tab.Navigator
+          screenOptions={{
+            tabBarActiveTintColor: '#706F87',
+          }}>
           <Tab.Screen
             name="Health Goals"
             component={HealthGoalsScreen}
             options={{
-              tabBarIcon: ({ color, size }) => (
+              tabBarIcon: ({ focused, size }) => (
                 <Image
                   source={require('./goal.png')}
-                  style={{ height: size, width: size, tintColor: color }}
+                  style={{ height: size, width: size, tintColor: focused ? '#A1E4C7' : '#706F87' }}
                 />
               ),
             }}
@@ -875,10 +1024,10 @@ export default function App() {
             name="Food Database"
             component={FoodDatabaseScreen}
             options={{
-              tabBarIcon: ({ color, size }) => (
+              tabBarIcon: ({ focused, size }) => (
                 <Image
                   source={require('./diet.png')}
-                  style={{ height: size, width: size, tintColor: color }}
+                  style={{ height: size, width: size, tintColor: focused ? '#F4D484' : '#706F87' }}
                 />
               ),
             }}
@@ -887,10 +1036,10 @@ export default function App() {
             name="Meal Planning"
             component={MealPlanningScreen}
             options={{
-              tabBarIcon: ({ color, size }) => (
+              tabBarIcon: ({ focused, size }) => (
                 <Image
                   source={require('./calendar.png')}
-                  style={{ height: size, width: size, tintColor: color }}
+                  style={{ height: size, width: size, tintColor: focused ? '#A483E1' : '#706F87' }}
                 />
               ),
             }}

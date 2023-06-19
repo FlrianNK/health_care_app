@@ -4,12 +4,12 @@
     "slug": "health_care_app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/splash.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "image": "./assets/nutrition.png",
+      "resizeMode": "native",
+      "backgroundColor": ""
     },
     "assetBundlePatterns": [
       "**/*"
