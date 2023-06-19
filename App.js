@@ -305,7 +305,6 @@ function FoodDatabaseScreen() {
       nutrients: item.roundedNutrients.ENERC_KCAL,
       quantity: lQuantity,
     });
-    //console.log(item.food.foodId);
     setLModalVisible(true);
     setQuantity(1);
     setSelectedDate(new Date());
