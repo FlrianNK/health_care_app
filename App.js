@@ -650,13 +650,11 @@ function MealPlanningScreen() {
 /********************************************** */
 
 const styles = StyleSheet.create({
+  // Styles used for the whole app
   appContainer: {
     flex: 1,
     padding: 20,
     justifyContent: 'center',
-  },
-  healthGoalScrollView: {
-    paddingRight: 10,
   },
   appLabel: {
     fontSize: 18,
@@ -664,6 +662,25 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 10,
     color: '#212121',
+  },
+  appQuantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  appQuantityButton: {
+    backgroundColor: '#F4D484',
+    padding: 0,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // Styles used for HealthGoalScreen
+  healthGoalScrollView: {
+    paddingRight: 10,
   },
   healthGoalInputFieldForm: {
     borderWidth: 1.5,
@@ -692,6 +709,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
+  // Styles used for FoodDatabasScreen
   databaseCard: {
     borderRadius: 6,
     elevation: 3,
@@ -778,12 +796,6 @@ const styles = StyleSheet.create({
   databaseButtonDateTextColor: {
     color: '#000',
   },
-  appQuantityContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
   databaseQuantityInput: {
     borderWidth: 1,
     borderColor: '#000',
@@ -799,15 +811,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: 50,
-  },
-  appQuantityButton: {
-    backgroundColor: '#F4D484',
-    padding: 0,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   databaseButtonActionsContainer: {
     flexDirection: 'row',
@@ -833,6 +836,7 @@ const styles = StyleSheet.create({
   databaseCancelText: {
     color: '#000',
   },
+  // Styles used for MealPlanningScreen
   planningMainMealContainer: {
     flex: 1,
     padding: 10,
