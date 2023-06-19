@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   StyleSheet,
-  Button,
   TouchableWithoutFeedback,
   Keyboard,
   ScrollView,
@@ -147,7 +146,6 @@ function HealthGoalsScreen() {
               if (newText.split('.').length > 2) {
                 return;
               }
-              // Update the text manually
               setWeight(newText);
             })}
             keyboardType="decimal-pad"
@@ -246,8 +244,6 @@ function FoodDatabaseScreen() {
       data.hints.forEach((item) => {
         let { foodId, label, category, nutrients } = item.food;
 
-        // Round each nutritional value to next whole number
-        // to compare them afterwards to avoid duplicates items
         let roundedNutrients = {
           ENERC_KCAL: Math.ceil(nutrients.ENERC_KCAL),
           CHOCDF: Math.ceil(nutrients.CHOCDF),
@@ -256,17 +252,14 @@ function FoodDatabaseScreen() {
           PROCNT: Math.ceil(nutrients.PROCNT),
         };
 
-        // Create a unique identifier
         //console.log(foodId);
         let identifier = `${foodId}-${label}-${category}-${roundedNutrients.ENERC_KCAL}-${roundedNutrients.CHOCDF}-${roundedNutrients.FAT}-${roundedNutrients.FIBTG}-${roundedNutrients.PROCNT}`;
 
-        // If this is a new identifier, store the item and roundedNutrients in the map
+        // If this is a new identifier, store the item in the map
         if (!foodMap.has(identifier)) {
           foodMap.set(identifier, { ...item, roundedNutrients });
         }
       });
-
-      // Convert the map values to an array
       let uniqueFoods = Array.from(foodMap.values());
 
       setLFoods(uniqueFoods);
@@ -305,6 +298,7 @@ function FoodDatabaseScreen() {
       nutrients: item.roundedNutrients.ENERC_KCAL,
       quantity: lQuantity,
     });
+    //console.log(item.food.foodId);
     setLModalVisible(true);
     setQuantity(1);
     setSelectedDate(new Date());
@@ -328,7 +322,6 @@ function FoodDatabaseScreen() {
     if (!lSelectedDate || !lTempMealSelection) {
       Alert.alert('Erreur', 'Veuillez choisir un jour et un repas');
     } else {
-      // Convert the date to a string
       let selectedDateString = lSelectedDate.toISOString().split('T')[0];
 
       // Add the selected food item to the meal plan
@@ -441,7 +434,7 @@ function FoodDatabaseScreen() {
 /********************************************** */
 
 function MealPlanningScreen() {
-  const { lMealPlan, addMealItem, removeMealItem } = useContext(MealPlanContext);
+  const { lMealPlan, addMealItem, removeMealItem, updateMealItem } = useContext(MealPlanContext);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [modalVisible, setModalVisible] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -564,8 +557,37 @@ function MealPlanningScreen() {
                   <Text style={styles.foodLabel}>{foodItem.foodItem.label}</Text>
                   <View style={styles.foodDetailsContainer}>
                     <View>
-                      <Text style={styles.foodCalories}>{foodItem.foodItem.nutrients} kcal</Text>
-                      <Text style={styles.foodQuantity}>Quantity: {foodItem.quantity}</Text>
+                      <Text style={styles.foodCalories}>
+                        Unit calorie : {foodItem.foodItem.nutrients} kcal
+                      </Text>
+                      <View style={styles.quantityContainer}>
+                        <TouchableOpacity
+                          style={[styles.quantityButton, { backgroundColor: '#A483E1' }]}
+                          onPress={() =>
+                            updateMealItem(
+                              currentDate.toISOString().slice(0, 10),
+                              mealType,
+                              foodItem.foodItem,
+                              -1
+                            )
+                          }
+                          disabled={foodItem.quantity <= 1}>
+                          <Text>-</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.foodQuantity}>Quantity: {foodItem.quantity}</Text>
+                        <TouchableOpacity
+                          style={[styles.quantityButton, { backgroundColor: '#A483E1' }]}
+                          onPress={() =>
+                            updateMealItem(
+                              currentDate.toISOString().slice(0, 10),
+                              mealType,
+                              foodItem.foodItem,
+                              1
+                            )
+                          }>
+                          <Text>+</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                     <TouchableOpacity
                       style={styles.mealPlanningButtonRemove}
@@ -971,6 +993,27 @@ export default function App() {
     });
   };
 
+  const updateMealItem = (date, mealType, foodItem, quantityChange) => {
+    setLMealPlan((prevPlan) => {
+      const newPlan = { ...prevPlan };
+
+      // Find the item to modify
+      const existingItemIndex = newPlan[date][mealType].findIndex(
+        (item) => item.foodItem.foodId === foodItem.foodId
+      );
+
+      // Check if the meal exists
+      if (existingItemIndex !== -1) {
+        newPlan[date][mealType][existingItemIndex].quantity = Math.max(
+          1,
+          newPlan[date][mealType][existingItemIndex].quantity + quantityChange
+        );
+      }
+
+      return newPlan;
+    });
+  };
+
   const saveMealPlan = async (mealPlan) => {
     try {
       await AsyncStorage.setItem('@mealPlan', JSON.stringify(mealPlan));
@@ -1001,7 +1044,7 @@ export default function App() {
   }, [lMealPlan]);
 
   return (
-    <MealPlanContext.Provider value={{ lMealPlan, addMealItem, removeMealItem }}>
+    <MealPlanContext.Provider value={{ lMealPlan, addMealItem, removeMealItem, updateMealItem }}>
       <NavigationContainer>
         <Tab.Navigator
           screenOptions={{
