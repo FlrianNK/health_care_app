@@ -4,8 +4,6 @@ import {
   Text,
   TextInput,
   StyleSheet,
-  TouchableWithoutFeedback,
-  Keyboard,
   ScrollView,
   FlatList,
   Alert,
@@ -21,16 +19,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /********************************************** */
 /*               HealthGoalsScreen              */
+/*   First tab of the app and the onpening tab  */
 /********************************************** */
 
 function HealthGoalsScreen() {
+  //Variables declaration
   const [lAge, setAge] = useState('');
   const [lGender, setGender] = useState(null);
   const [lHeight, setHeight] = useState('');
   const [lWeight, setWeight] = useState('');
   const [lActivityLevel, setActivityLevel] = useState(null);
   const [lHealthGoal, setHealthGoal] = useState(null);
-
+  const [lCaloricIntake, setCaloricIntake] = useState(0);
+  const [lShowResults, setShowResults] = useState(false);
+  // Boolean to check that all fields are filled and have valid values.
   const lIsFormValid =
     lAge !== '' &&
     lGender !== null &&
@@ -42,31 +44,18 @@ function HealthGoalsScreen() {
     lHealthGoal !== null &&
     lHealthGoal !== 'Select your health goal';
 
-  const [lCaloricIntake, setCaloricIntake] = useState(0);
-  const [lShowResults, setShowResults] = useState(false);
-
-  // Function to handle input change
+  // Update a specific variable state with the provided value.
   const handleInputChange = (setter) => (value) => {
     setShowResults(false);
     setter(value);
   };
 
-  // Use effect function to calculate caloric intake when all form fields are filled
+  // UseEffect function to calculate caloric intake when all form fields are filled
   useEffect(() => {
     if (lIsFormValid) {
       calculateCaloricIntake();
     }
   }, [lAge, lGender, lHeight, lWeight, lActivityLevel, lHealthGoal]);
-
-  const calculateBMR = () => {
-    let lBMR;
-    if (lGender === 'male') {
-      lBMR = 88.362 + 13.397 * lWeight + 4.799 * lHeight - 5.677 * lAge;
-    } else {
-      lBMR = 447.593 + 9.247 * lWeight + 3.098 * lHeight - 4.33 * lAge;
-    }
-    return lBMR;
-  };
 
   // Function to calculate caloric intake
   const calculateCaloricIntake = () => {
@@ -98,126 +87,145 @@ function HealthGoalsScreen() {
     setCaloricIntake(Math.round(lTotalCalories));
   };
 
+  // Function to calculate BMR of the user
+  const calculateBMR = () => {
+    let lBMR;
+    if (lGender === 'male') {
+      lBMR = 88.362 + 13.397 * lWeight + 4.799 * lHeight - 5.677 * lAge;
+    } else {
+      lBMR = 447.593 + 9.247 * lWeight + 3.098 * lHeight - 4.33 * lAge;
+    }
+    return lBMR;
+  };
+
   return (
-    <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-      <View style={styles.container}>
-        <ScrollView style={styles.scrollview} keyboardShouldPersistTaps="handled">
-          <Text style={styles.label}>Age:</Text>
-          <TextInput
-            style={styles.inputFieldForm}
-            onChangeText={handleInputChange((text) => {
-              let lAge = text.replace(/[^0-9]/g, '');
-              setAge(lAge);
-            })}
-            value={lAge}
-            keyboardType="numeric"
-            maxLength={3}
-          />
+    <View style={styles.appContainer}>
+      <ScrollView style={styles.healthGoalScrollView} keyboardShouldPersistTaps="handled">
+        <Text style={styles.appLabel}>Age:</Text>
+        <TextInput
+          style={styles.healthGoalInputFieldForm}
+          onChangeText={handleInputChange((text) => {
+            // Regex to accept only number and no dot or comma or space
+            let lAge = text.replace(/[^0-9]/g, '');
+            setAge(lAge);
+          })}
+          value={lAge}
+          keyboardType="numeric"
+          maxLength={3}
+        />
 
-          <Text style={styles.label}>Gender:</Text>
-          <Picker
-            style={styles.picker}
-            selectedValue={lGender}
-            prompt="Select your gender"
-            onValueChange={(itemValue) => itemValue !== 'default' && setGender(itemValue)}>
-            <Picker.Item label="Select your gender" value="default" />
-            <Picker.Item label="Male" value="male" />
-            <Picker.Item label="Female" value="female" />
-          </Picker>
+        <Text style={styles.appLabel}>Gender:</Text>
+        <Picker
+          style={styles.healthGoalPicker}
+          selectedValue={lGender}
+          prompt="Select your gender"
+          onValueChange={(itemValue) => itemValue !== 'default' && setGender(itemValue)}>
+          {/* "the slect your activity level" is default to be used as an indicator 
+              but can't be selected  */}
+          <Picker.Item label="Select your gender" value="default" />
+          <Picker.Item label="Male" value="male" />
+          <Picker.Item label="Female" value="female" />
+        </Picker>
 
-          <Text style={styles.label}>Height (cm):</Text>
-          <TextInput
-            style={styles.inputFieldForm}
-            onChangeText={handleInputChange((text) => {
-              let lHeight = text.replace(/[^0-9]/g, '');
-              setHeight(lHeight);
-            })}
-            value={lHeight}
-            keyboardType="numeric"
-            maxLength={3}
-          />
+        <Text style={styles.appLabel}>Height (cm):</Text>
+        <TextInput
+          style={styles.healthGoalInputFieldForm}
+          onChangeText={handleInputChange((text) => {
+            let lHeight = text.replace(/[^0-9]/g, '');
+            setHeight(lHeight);
+          })}
+          value={lHeight}
+          keyboardType="numeric"
+          maxLength={3}
+        />
 
-          <Text style={styles.label}>Weight (kg):</Text>
-          <TextInput
-            style={styles.inputFieldForm}
-            value={lWeight}
-            onChangeText={handleInputChange((text) => {
-              let newText = text.replace(/[^0-9\.]/g, '');
-              if (newText.split('.').length > 2) {
-                return;
-              }
-              setWeight(newText);
-            })}
-            keyboardType="decimal-pad"
-            maxLength={6}
-          />
-          <Text style={styles.label}>Activity Level:</Text>
-          <Picker
-            style={styles.picker}
-            selectedValue={lActivityLevel}
-            prompt="Select your activity level"
-            onValueChange={handleInputChange(
-              (itemValue) => itemValue !== 'default' && setActivityLevel(itemValue)
-            )}>
-            <Picker.Item label="Select your activity level" value="default" />
-            <Picker.Item label="Sedentary" value="sedentary" />
-            <Picker.Item label="Light Exercise" value="light" />
-            <Picker.Item label="Moderate Exercise" value="moderate" />
-            <Picker.Item label="Heavy Exercise" value="heavy" />
-            <Picker.Item label="Extra Active" value="extra" />
-          </Picker>
-          <Text style={styles.label}>Health Goal:</Text>
-          <Picker
-            style={styles.picker}
-            selectedValue={lHealthGoal}
-            prompt="Select your Health goal"
-            onValueChange={handleInputChange(
-              (itemValue) => itemValue !== 'default' && setHealthGoal(itemValue)
-            )}>
-            <Picker.Item label="Select your health goal" value="default" />
-            <Picker.Item label="Weight Loss" value="loss" />
-            <Picker.Item label="Weight Maintenance" value="maintenance" />
-            <Picker.Item label="Weight Gain" value="gain" />
-          </Picker>
-          <TouchableOpacity
-            style={styles.ButtonFormSubmit}
-            onPress={() => {
-              if (lIsFormValid) {
-                setShowResults(true);
-              } else {
-                Alert.alert('Invalid form', 'Please make sure all fields are filled');
-              }
-            }}>
-            <Text style={styles.buttonTextSubmit}>Submit</Text>
-          </TouchableOpacity>
-        </ScrollView>
-        {lShowResults && (
-          <View style={styles.resultContainer}>
-            <Text style={styles.resultText}>Daily Caloric Intake: {lCaloricIntake}</Text>
-          </View>
-        )}
-      </View>
-    </TouchableWithoutFeedback>
+        <Text style={styles.appLabel}>Weight (kg):</Text>
+        <TextInput
+          style={styles.healthGoalInputFieldForm}
+          value={lWeight}
+          onChangeText={handleInputChange((text) => {
+            let newText = text.replace(/[^0-9\.]/g, '');
+            if (newText.split('.').length > 2) {
+              return;
+            }
+            setWeight(newText);
+          })}
+          keyboardType="numeric"
+          maxLength={5}
+        />
+        <Text style={styles.appLabel}>Activity Level:</Text>
+        <Picker
+          style={styles.healthGoalPicker}
+          selectedValue={lActivityLevel}
+          prompt="Select your activity level"
+          onValueChange={handleInputChange(
+            (itemValue) => itemValue !== 'default' && setActivityLevel(itemValue)
+          )}>
+          <Picker.Item label="Select your activity level" value="default" />
+          <Picker.Item label="Sedentary" value="sedentary" />
+          <Picker.Item label="Light Exercise" value="light" />
+          <Picker.Item label="Moderate Exercise" value="moderate" />
+          <Picker.Item label="Heavy Exercise" value="heavy" />
+          <Picker.Item label="Extra Active" value="extra" />
+        </Picker>
+        <Text style={styles.appLabel}>Health Goal:</Text>
+        <Picker
+          style={styles.healthGoalPicker}
+          selectedValue={lHealthGoal}
+          prompt="Select your Health goal"
+          onValueChange={handleInputChange(
+            (itemValue) => itemValue !== 'default' && setHealthGoal(itemValue)
+          )}>
+          <Picker.Item label="Select your health goal" value="default" />
+          <Picker.Item label="Weight Loss" value="loss" />
+          <Picker.Item label="Weight Maintenance" value="maintenance" />
+          <Picker.Item label="Weight Gain" value="gain" />
+        </Picker>
+        <TouchableOpacity
+          style={styles.healthGoalButtonFormSubmit}
+          onPress={() => {
+            if (lIsFormValid) {
+              setShowResults(true);
+            } else {
+              Alert.alert('Invalid form', 'Please make sure all fields are filled');
+            }
+          }}>
+          <Text style={styles.healGoalButtonTextSubmit}>Submit</Text>
+        </TouchableOpacity>
+      </ScrollView>
+      {/* The following view is shown when the form is valid
+       and the user pressed submit*/}
+      {lShowResults && (
+        <View>
+          <Text>Daily Caloric Intake: {lCaloricIntake}</Text>
+        </View>
+      )}
+    </View>
   );
 }
 
 /********************************************** */
 /*               FoodDataBaseScreen             */
+/*              Second tab of the app           */
 /********************************************** */
 
 function FoodDatabaseScreen() {
+  // Use useContext hook to access the MealPlanContext to pass information to other tab
   const { lMealPlan, addMealItem, removeMealItem } = useContext(MealPlanContext);
-  const [lSearchQuery, setLSearchQuery] = useState('');
-  const [lFoods, setLFoods] = useState([]);
-  const [lModalVisible, setLModalVisible] = useState(false);
-  const [lSelectedFoodItem, setLSelectedFoodItem] = useState(null);
+  const [lSearchQuery, setSearchQuery] = useState('');
+  const [lFoods, setFoods] = useState([]);
+  const [lModalVisible, setModalVisible] = useState(false);
+  const [lSelectedFoodItem, setSelectedFoodItem] = useState(null);
+  /* lTempMealSelection is used to store the user's choice temprorarily 
+  before adding it to meal plan */
   const [lTempMealSelection, setTempMealSelection] = useState('');
   const [lShowDatePicker, setShowDatePicker] = useState(false);
   const [lSelectedDate, setSelectedDate] = useState(new Date());
   const [lQuantity, setQuantity] = useState(1);
 
+  //Function to change the variable lSearchQuery according to the user's input
   const handleInputChange = (value) => {
-    setLSearchQuery(value);
+    setSearchQuery(value);
   };
 
   const handleSearch = async () => {
@@ -262,18 +270,19 @@ function FoodDatabaseScreen() {
       });
       let uniqueFoods = Array.from(foodMap.values());
 
-      setLFoods(uniqueFoods);
+      setFoods(uniqueFoods);
     } catch (error) {
       console.error(error);
       Alert.alert('Error', error.message);
     }
   };
 
+  // Define how each item result will be rendered
   const renderItem = ({ item }) => (
-    <View style={styles.card}>
-      <View style={styles.cardContent}>
-        <Image source={{ uri: item.food.image }} style={styles.image} />
-        <Text style={styles.foodTitle}>{item.food.label}</Text>
+    <View style={styles.databaseCard}>
+      <View style={styles.databaseCardContent}>
+        <Image source={{ uri: item.food.image }} style={styles.databaseFoodImage} />
+        <Text style={styles.databaseFoodTitle}>{item.food.label}</Text>
         <Text>Category: {item.food.category}</Text>
         <Text>Calories: {item.roundedNutrients.ENERC_KCAL} kcal</Text>
         <Text>Carbs: {item.roundedNutrients.CHOCDF} g</Text>
@@ -281,17 +290,20 @@ function FoodDatabaseScreen() {
         <Text>Fiber: {item.roundedNutrients.FIBTG} g</Text>
         <Text>Protein: {item.roundedNutrients.PROCNT} g</Text>
         <TouchableOpacity
-          style={styles.ButtonAddToMealPlan}
+          style={styles.databaseButtonAddToMealPlan}
           title="Add to Meal Plan"
           onPress={() => addToMealPlan(item)}>
-          <Text style={styles.buttonText}>Add to Meal Plan</Text>
+          <Text style={styles.appTextInButtonColor}>Add to Meal Plan</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 
+  /* Prepare the selected food to be added to the meal plan by storing a 
+  unique key and other information */
   const addToMealPlan = (item) => {
-    setLSelectedFoodItem({
+    setSelectedFoodItem({
+      // Create unique key by concatenating selected food information
       foodId: `${item.food.foodId}-${item.food.label}-${item.food.category}-${item.roundedNutrients.ENERC_KCAL}-${item.roundedNutrients.CHOCDF}-${item.roundedNutrients.FAT}-${item.roundedNutrients.FIBTG}-${item.roundedNutrients.PROCNT}`,
       label: item.food.label,
       category: item.food.category,
@@ -299,28 +311,28 @@ function FoodDatabaseScreen() {
       quantity: lQuantity,
     });
     //console.log(item.food.foodId);
-    setLModalVisible(true);
+    setModalVisible(true);
     setQuantity(1);
     setSelectedDate(new Date());
   };
 
-  const handleModalClose = () => {
-    setLModalVisible(false);
-  };
-
+  // Update lSelectedDate state variable to the selected date
   const handleDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || date;
     setShowDatePicker(false);
     setSelectedDate(currentDate);
   };
 
+  // Update lTempMealSelection state variable to the selected meal
   const handleMealSelectionTemp = (itemValue) => {
     setTempMealSelection(itemValue);
   };
 
+  /* Check that a date and meal have been selected, 
+  if so, add the selected food to the meal plan */
   const handleConfirmation = () => {
     if (!lSelectedDate || !lTempMealSelection) {
-      Alert.alert('Erreur', 'Veuillez choisir un jour et un repas');
+      Alert.alert('Wait', 'Please select a day and a meal first');
     } else {
       let selectedDateString = lSelectedDate.toISOString().split('T')[0];
 
@@ -328,24 +340,24 @@ function FoodDatabaseScreen() {
       addMealItem(selectedDateString, lTempMealSelection, lSelectedFoodItem, lQuantity);
       //console.log(selectedDateString, lTempMealSelection, lSelectedFoodItem, lQuantity);
 
-      Alert.alert('Succès', "L'aliment a été ajouté à votre plan de repas");
-      setLSelectedFoodItem(null);
+      Alert.alert('Success', 'Your food has been successfully added to your meal plan');
+      setSelectedFoodItem(null);
       setTempMealSelection('');
-      setLModalVisible(false);
+      setModalVisible(false);
       setSelectedDate(new Date());
     }
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.appContainer}>
       <TextInput
         value={lSearchQuery}
         onChangeText={handleInputChange}
         style={styles.input}
         placeholder="Search for a food..."
       />
-      <TouchableOpacity style={styles.buttonSearch} onPress={handleSearch}>
-        <Text style={styles.buttonText}>Search</Text>
+      <TouchableOpacity style={styles.databaseButtonSearch} onPress={handleSearch}>
+        <Text style={styles.appTextInButtonColor}>Search</Text>
       </TouchableOpacity>
       <FlatList
         data={lFoods}
@@ -353,14 +365,19 @@ function FoodDatabaseScreen() {
         renderItem={renderItem}
       />
       <Modal animationType="slide" transparent={true} visible={lModalVisible}>
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalText}>Add to Meal Plan</Text>
-            <Text style={styles.modalText}>Select the day and meal for this item:</Text>
+        <View style={styles.databseModalContainer}>
+          <View style={styles.databaseModalContent}>
+            <Text style={styles.databaseModalText}>Add to Meal Plan</Text>
+            <Text style={styles.databaseModalText}>Select the day and meal for this item:</Text>
+
+            {/* This button shows or hides the date picker */}
             <TouchableOpacity
-              style={styles.ButtonDate}
+              style={styles.databaseButtonDate}
               onPress={() => setShowDatePicker(!lShowDatePicker)}>
-              <Text style={styles.ButtonDateText}>{`${lSelectedDate.toDateString()}`}</Text>
+              <Text
+                style={
+                  styles.databaseButtonDateTextColor
+                }>{`${lSelectedDate.toDateString()}`}</Text>
             </TouchableOpacity>
 
             {lShowDatePicker && (
@@ -383,10 +400,10 @@ function FoodDatabaseScreen() {
             </Picker>
 
             <View>
-              <Text style={styles.modalText}>Quantité désirée :</Text>
-              <View style={styles.quantityContainer}>
+              <Text style={styles.databaseModalText}>Quantity :</Text>
+              <View style={styles.appQuantityContainer}>
                 <TextInput
-                  style={styles.quantityInput}
+                  style={styles.databaseQuantityInput}
                   value={String(lQuantity)}
                   onChangeText={(text) => {
                     const newQuantity = Number(text);
@@ -397,29 +414,32 @@ function FoodDatabaseScreen() {
                   keyboardType="numeric"
                   maxLength={3}
                 />
-                <View style={styles.buttonsContainer}>
+
+                {/* These buttons allow users to increment or 
+                decrement the quantity of the food */}
+                <View style={styles.databaseButtonsContainer}>
                   <TouchableOpacity
-                    style={styles.quantityButton}
+                    style={styles.appQuantityButton}
                     onPress={() => setQuantity((prevQuantity) => Math.max(1, prevQuantity - 1))}>
-                    <Text style={styles.buttonText}>-</Text>
+                    <Text style={styles.appTextInButtonColor}>-</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.quantityButton}
+                    style={styles.appQuantityButton}
                     onPress={() => setQuantity((prevQuantity) => prevQuantity + 1)}>
-                    <Text style={styles.buttonText}>+</Text>
+                    <Text style={styles.appTextInButtonColor}>+</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </View>
 
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={styles.buttonConfirmFoodDatabase}
-                onPress={handleConfirmation}>
-                <Text style={styles.buttonText}>Confirm</Text>
+            <View style={styles.databaseButtonActionsContainer}>
+              <TouchableOpacity style={styles.databaseButtonConfirm} onPress={handleConfirmation}>
+                <Text style={styles.appTextInButtonColor}>Confirm</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.buttonCancel} onPress={handleModalClose}>
-                <Text style={styles.buttonCancelText}>Cancel</Text>
+              <TouchableOpacity
+                style={styles.databaseButtonCancel}
+                onPress={() => setModalVisible(false)}>
+                <Text style={styles.databaseCancelText}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -431,31 +451,34 @@ function FoodDatabaseScreen() {
 
 /********************************************** */
 /*               MealPlanningScreen             */
+/*             The last tab of the app          */
 /********************************************** */
 
 function MealPlanningScreen() {
+  /* Use useContext hook to get the MealPlanContext to 
+  display information and modify them if needed */
   const { lMealPlan, addMealItem, removeMealItem, updateMealItem } = useContext(MealPlanContext);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [modalVisible, setModalVisible] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null);
-  const mealOrder = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
-  const navigation = useNavigation();
-  const removeIcon = require('./assets/bin.png');
+  const [lCurrentDate, setCurrentDate] = useState(new Date());
+  const [lModalVisible, setModalVisible] = useState(false);
+  const [lItemToDelete, setItemToDelete] = useState(null);
+  const lMealOrder = ['Breakfast', 'Lunch', 'Snack', 'Dinner']; // Set the displaying order of meals
+  const lNavigation = useNavigation(); // Use to navigate to foodDatabaseScreen
+  const lRemoveIcon = require('./assets/bin.png'); //The bin icon for "Remove" button
 
+  // Remove the specific food item from the meal plan
   const handleRemoveItem = (date, mealType, foodItem) => {
     removeMealItem(date, mealType, foodItem);
     setModalVisible(false);
   };
 
+  /* Display the removing Confirmation modal to the user
+  Assign the item to the value lItemToDelete */
   const handleOpenModal = (item) => {
     setItemToDelete(item);
     setModalVisible(true);
   };
 
-  const handleCloseModal = () => {
-    setModalVisible(false);
-  };
-
+  // Method that crete the meal list
   const createMealList = (selectedDate) => {
     let mealList = {};
     for (let date in lMealPlan) {
@@ -470,16 +493,17 @@ function MealPlanningScreen() {
         }
       }
     }
-
     return mealList;
   };
 
+  // Handle the change of the displaying date
   const handleDateChange = (offset) => {
-    let newDate = new Date(currentDate);
+    let newDate = new Date(lCurrentDate);
     newDate.setDate(newDate.getDate() + offset);
     setCurrentDate(newDate);
   };
 
+  // Calculate the total calories of the day
   const calculateTotalCalories = (meals) => {
     let totalCalories = 0;
     for (let mealType in meals) {
@@ -490,82 +514,90 @@ function MealPlanningScreen() {
     return totalCalories;
   };
 
-  const meals = createMealList(currentDate.toISOString().slice(0, 10));
-  const totalCalories = calculateTotalCalories(meals);
+  // Call the function to create the meal list
+  const lMeals = createMealList(lCurrentDate.toISOString().slice(0, 10));
+  const lTtotalCalories = calculateTotalCalories(lMeals);
 
   return (
-    <View style={styles.mainMealContainer}>
-      <Modal visible={modalVisible} onRequestClose={handleCloseModal} transparent>
-        <View style={styles.mealPlanningModalContainer}>
-          <View style={styles.mealPlanningModalContent}>
-            <Text style={styles.mealPlanningModalText}>
-              Are you sure you want to remove {itemToDelete?.foodItem.label} from{' '}
-              {itemToDelete?.mealType} ?
+    <View style={styles.planningMainMealContainer}>
+      <Modal visible={lModalVisible} transparent={true}>
+        <View style={styles.planningModalContainer}>
+          <View style={styles.planningModalContent}>
+            <Text style={styles.planningModalText}>
+              Are you sure you want to remove {lItemToDelete?.foodItem.label} from{' '}
+              {lItemToDelete?.mealType} ?
             </Text>
-            <View style={styles.mealPlanningModalButtonContainer}>
+            <View style={styles.planningModalButtonContainer}>
+              {/* The following button confirms the removal of the food item from the meal */}
               <TouchableOpacity
-                style={styles.mealPlanningModalButtonConfirm}
+                style={styles.planningModalButtonConfirm}
                 onPress={() =>
-                  handleRemoveItem(itemToDelete.date, itemToDelete.mealType, itemToDelete.foodItem)
+                  handleRemoveItem(
+                    lItemToDelete.date,
+                    lItemToDelete.mealType,
+                    lItemToDelete.foodItem
+                  )
                 }>
-                <Text style={styles.mealPlanningButtonText}>Confirm</Text>
+                <Text style={styles.planningButtonText}>Confirm</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.mealPlanningModalButtonCancel}
-                onPress={handleCloseModal}>
-                <Text style={styles.mealPlanningButtonText}>Cancel</Text>
+                style={styles.planningModalButtonCancel}
+                onPress={() => setModalVisible(false)}>
+                <Text style={styles.planningButtonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
-      <View style={styles.mealDateContainer}>
+      <View style={styles.planningMealDateContainer}>
         <TouchableOpacity
-          style={styles.buttonChangeDateMealPlanning}
+          style={styles.planningButtonChangeDate}
           onPress={() => handleDateChange(-1)}>
-          <Text style={styles.buttonText}>&lt;</Text>
+          <Text style={styles.appTextInButtonColor}>&lt;</Text>
         </TouchableOpacity>
-        <Text style={styles.dateTextMealPlanning}>{currentDate.toDateString()}</Text>
+        <Text style={styles.planningTextDate}>{lCurrentDate.toDateString()}</Text>
         <TouchableOpacity
-          style={styles.buttonChangeDateMealPlanning}
+          style={styles.planningButtonChangeDate}
           onPress={() => handleDateChange(1)}>
-          <Text style={styles.buttonText}>&gt;</Text>
+          <Text style={styles.appTextInButtonColor}>&gt;</Text>
         </TouchableOpacity>
       </View>
-      <Text>Total Calories: {totalCalories} kcal</Text>
+      <Text>Total Calories: {lTtotalCalories} kcal</Text>
+      {/*Display the total calories of the day */}
       <ScrollView>
-        {mealOrder.map((mealType) => {
-          const foodItems = meals[mealType] || [];
+        {lMealOrder.map((mealType) => {
+          const foodItems = lMeals[mealType] || [];
           return (
             //console.log(foodItems.foodId),
-            <View key={mealType} style={styles.mealContainer}>
-              <View style={styles.mealTypeContainer}>
-                <Text style={styles.mealType}>{mealType}</Text>
+            <View key={mealType} style={styles.planningMealContainer}>
+              <View style={styles.planningMealTypeContainer}>
+                <Text style={styles.planningMealType}>{mealType}</Text>
                 <TouchableOpacity
-                  style={styles.buttonAddFoodMealPlanning}
+                  style={styles.planningButtonAddFood}
                   onPress={() =>
-                    navigation.navigate('Food Database', {
+                    lNavigation.navigate('Food Database', {
                       mealType: mealType,
-                      date: currentDate.toISOString().slice(0, 10),
+                      date: lCurrentDate.toISOString().slice(0, 10),
                     })
                   }>
-                  <Text style={styles.buttonText}> + Add Food</Text>
+                  <Text style={styles.appTextInButtonColor}> + Add Food</Text>
                 </TouchableOpacity>
               </View>
+              {/* For each food item, create a card with information and control buttons */}
               {foodItems.map((foodItem) => (
-                <View key={foodItem.foodItem.foodId} style={styles.foodContainer}>
-                  <Text style={styles.foodLabel}>{foodItem.foodItem.label}</Text>
-                  <View style={styles.foodDetailsContainer}>
+                <View key={foodItem.foodItem.foodId} style={styles.planningFoodContainer}>
+                  <Text style={styles.planningTextFoodName}>{foodItem.foodItem.label}</Text>
+                  <View style={styles.planningFoodDetailsContainer}>
                     <View>
-                      <Text style={styles.foodCalories}>
-                        Unit calorie : {foodItem.foodItem.nutrients} kcal
+                      <Text style={styles.planningTextFoodCalories}>
+                        Unit calories : {foodItem.foodItem.nutrients} kcal
                       </Text>
-                      <View style={styles.quantityContainer}>
+                      <View style={styles.appQuantityContainer}>
                         <TouchableOpacity
-                          style={[styles.quantityButton, { backgroundColor: '#A483E1' }]}
+                          style={[styles.appQuantityButton, { backgroundColor: '#A483E1' }]}
                           onPress={() =>
                             updateMealItem(
-                              currentDate.toISOString().slice(0, 10),
+                              lCurrentDate.toISOString().slice(0, 10),
                               mealType,
                               foodItem.foodItem,
                               -1
@@ -574,12 +606,14 @@ function MealPlanningScreen() {
                           disabled={foodItem.quantity <= 1}>
                           <Text>-</Text>
                         </TouchableOpacity>
-                        <Text style={styles.foodQuantity}>Quantity: {foodItem.quantity}</Text>
+                        <Text style={styles.planningTextFoodQuantity}>
+                          Quantity: {foodItem.quantity}
+                        </Text>
                         <TouchableOpacity
-                          style={[styles.quantityButton, { backgroundColor: '#A483E1' }]}
+                          style={[styles.appQuantityButton, { backgroundColor: '#A483E1' }]}
                           onPress={() =>
                             updateMealItem(
-                              currentDate.toISOString().slice(0, 10),
+                              lCurrentDate.toISOString().slice(0, 10),
                               mealType,
                               foodItem.foodItem,
                               1
@@ -590,15 +624,15 @@ function MealPlanningScreen() {
                       </View>
                     </View>
                     <TouchableOpacity
-                      style={styles.mealPlanningButtonRemove}
+                      style={styles.planningButtonRemoveFood}
                       onPress={() =>
                         handleOpenModal({
-                          date: currentDate.toISOString().slice(0, 10),
+                          date: lCurrentDate.toISOString().slice(0, 10),
                           mealType,
                           foodItem: foodItem.foodItem,
                         })
                       }>
-                      <Image source={removeIcon} style={{ width: 20, height: 20 }} />
+                      <Image source={lRemoveIcon} style={{ width: 20, height: 20 }} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -612,45 +646,40 @@ function MealPlanningScreen() {
 }
 
 /********************************************** */
-/*            Style of the whole App             */
+/*            Style of the whole App            */
 /********************************************** */
 
 const styles = StyleSheet.create({
-  logo: {
-    color: '#000000',
-    width: 10,
-    height: 10,
-  },
-  scrollview: {
-    paddingRight: 10,
-  },
-  container: {
+  appContainer: {
     flex: 1,
     padding: 20,
     justifyContent: 'center',
   },
-  label: {
+  healthGoalScrollView: {
+    paddingRight: 10,
+  },
+  appLabel: {
     fontSize: 18,
     fontWeight: 'bold',
     marginTop: 10,
     marginBottom: 10,
     color: '#212121',
   },
-  inputFieldForm: {
+  healthGoalInputFieldForm: {
     borderWidth: 1.5,
     borderColor: '#ddd',
     padding: 10,
     fontSize: 14,
     borderRadius: 10,
   },
-  picker: {
+  healthGoalPicker: {
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 6,
     marginBottom: 15,
     overflow: 'hidden',
   },
-  ButtonFormSubmit: {
+  healthGoalButtonFormSubmit: {
     backgroundColor: '#7ED9C4',
     alignSelf: 'center',
     borderRadius: 20,
@@ -658,115 +687,12 @@ const styles = StyleSheet.create({
     width: 150,
     justifyContent: 'center',
   },
-  buttonTextSubmit: {
+  healGoalButtonTextSubmit: {
     color: '#47424B',
     fontSize: 14,
     textAlign: 'center',
   },
-
-  image: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    position: 'absolute',
-    right: 0,
-    top: -80,
-  },
-
-  foodTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  buttonSearch: {
-    backgroundColor: '#F4D484',
-    borderRadius: 50,
-    marginTop: 10,
-    marginBottom: 15,
-    width: 200,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 10,
-  },
-  ButtonAddToMealPlan: {
-    backgroundColor: '#F4D484',
-    borderRadius: 50,
-    marginTop: 15,
-    marginBottom: 15,
-    width: 200,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 10,
-  },
-  buttonText: {
-    color: '#47424B',
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    width: '80%',
-  },
-  modalText: {
-    fontSize: 16,
-    marginBottom: 20,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 10,
-  },
-  buttonCancel: {
-    backgroundColor: 'transparent',
-    borderColor: '#000',
-    borderWidth: 1,
-    borderRadius: 5,
-    padding: 10,
-    marginRight: 5,
-  },
-  buttonCancelText: {
-    color: '#000',
-  },
-  buttonConfirmFoodDatabase: {
-    backgroundColor: '#F4D484',
-    borderColor: '#F4D484',
-    borderWidth: 1,
-    borderRadius: 5,
-    padding: 10,
-    marginRight: 5,
-  },
-  ButtonDate: {
-    borderWidth: 1,
-    borderColor: '#000',
-    borderRadius: 5,
-    padding: 10,
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-    width: 200,
-    alignSelf: 'center',
-    marginBottom: 20,
-    marginBottom: 10,
-  },
-
-  ButtonDateText: {
-    color: '#000',
-  },
-
-  buttonConfirmMealPlanning: {
-    backgroundColor: '#9C27B0',
-    borderColor: '#9C27B0',
-    borderWidth: 1,
-    borderRadius: 5,
-    padding: 10,
-    marginRight: 5,
-  },
-  card: {
+  databaseCard: {
     borderRadius: 6,
     elevation: 3,
     backgroundColor: '#fff',
@@ -779,19 +705,86 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     marginTop: 30,
   },
-  cardContent: {
+  databaseCardContent: {
     marginTop: 40,
     marginHorizontal: 18,
     marginVertical: 10,
     marginBottom: 20,
   },
-  quantityContainer: {
+  databaseFoodImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    position: 'absolute',
+    right: 0,
+    top: -80,
+  },
+  databaseFoodTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  databaseButtonAddToMealPlan: {
+    backgroundColor: '#F4D484',
+    borderRadius: 50,
+    marginTop: 15,
+    marginBottom: 15,
+    width: 200,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+  },
+  databaseButtonSearch: {
+    backgroundColor: '#F4D484',
+    borderRadius: 50,
+    marginTop: 10,
+    marginBottom: 15,
+    width: 200,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10,
+  },
+  appTextInButtonColor: {
+    color: '#47424B',
+  },
+  databseModalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  databaseModalContent: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
+  },
+  databaseModalText: {
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  databaseButtonDate: {
+    borderWidth: 1,
+    borderColor: '#000',
+    borderRadius: 5,
+    padding: 10,
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    width: 200,
+    alignSelf: 'center',
+    marginBottom: 20,
+    marginBottom: 10,
+  },
+  databaseButtonDateTextColor: {
+    color: '#000',
+  },
+  appQuantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
   },
-  quantityInput: {
+  databaseQuantityInput: {
     borderWidth: 1,
     borderColor: '#000',
     width: 60,
@@ -802,12 +795,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     marginTop: 10,
   },
-  buttonsContainer: {
+  databaseButtonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: 50,
   },
-  quantityButton: {
+  appQuantityButton: {
     backgroundColor: '#F4D484',
     padding: 0,
     width: 20,
@@ -816,117 +809,57 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  mainMealContainer: {
+  databaseButtonActionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 10,
+  },
+  databaseButtonConfirm: {
+    backgroundColor: '#F4D484',
+    borderColor: '#F4D484',
+    borderWidth: 1,
+    borderRadius: 5,
+    padding: 10,
+    marginRight: 5,
+  },
+  databaseButtonCancel: {
+    backgroundColor: 'transparent',
+    borderColor: '#000',
+    borderWidth: 1,
+    borderRadius: 5,
+    padding: 10,
+    marginRight: 5,
+  },
+  databaseCancelText: {
+    color: '#000',
+  },
+  planningMainMealContainer: {
     flex: 1,
     padding: 10,
   },
-  mealDateContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  dateTextMealPlanning: {
-    marginHorizontal: 20,
-  },
-  mealContainer: {
-    marginBottom: 10,
-  },
-  buttonChangeDateMealPlanning: {
-    backgroundColor: '#B8A1E3',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  buttonAddFoodMealPlanning: {
-    backgroundColor: '#B8A1E3',
-    borderRadius: 50,
-    width: 120,
-    height: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 2,
-  },
-  mealType: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  foodContainer: {
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: 10,
-    marginVertical: 5,
-    borderRadius: 10,
-    backgroundColor: '#f0f0f0',
-    borderWidth: 1,
-    borderColor: 'black',
-  },
-  foodLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  foodQuantity: {
-    margin: 3,
-    fontSize: 14,
-  },
-  foodCalories: {
-    margin: 3,
-    fontSize: 15,
-  },
-  mealTypeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 10,
-  },
-  mealPlanningButtonRemove: {
-    backgroundColor: '#F16262',
-    borderRadius: 25,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 'auto',
-  },
-  mealPlanningRemoveText: {
-    color: '#fff',
-    fontSize: 13,
-  },
-  foodDetailsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginTop: 5,
-  },
-
-  mealPlanningModalContainer: {
+  planningModalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
-  mealPlanningModalContent: {
+  planningModalContent: {
     backgroundColor: 'white',
     padding: 20,
     borderRadius: 10,
     width: '80%',
   },
-  mealPlanningModalText: {
+  planningModalText: {
     textAlign: 'center',
     fontSize: 17,
   },
-  mealPlanningModalButtonContainer: {
+  planningModalButtonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 20,
     width: '100%',
   },
-  mealPlanningModalButtonConfirm: {
+  planningModalButtonConfirm: {
     backgroundColor: '#A483E1',
     borderRadius: 10,
     paddingVertical: 10,
@@ -936,7 +869,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     margin: 5,
   },
-  mealPlanningModalButtonCancel: {
+  planningButtonText: {
+    color: '#000000',
+    fontSize: 13,
+  },
+  planningModalButtonCancel: {
     borderColor: '#000000',
     borderWidth: 1,
     borderRadius: 10,
@@ -947,17 +884,97 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     margin: 5,
   },
-  mealPlanningButtonText: {
-    color: '#000000',
-    fontSize: 13,
+  planningMealDateContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  planningButtonChangeDate: {
+    backgroundColor: '#B8A1E3',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  planningTextDate: {
+    marginHorizontal: 20,
+  },
+  planningMealContainer: {
+    marginBottom: 10,
+  },
+  planningMealTypeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+  },
+  planningMealType: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  planningButtonAddFood: {
+    backgroundColor: '#B8A1E3',
+    borderRadius: 50,
+    width: 120,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 2,
+  },
+  planningFoodContainer: {
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: 10,
+    marginVertical: 5,
+    borderRadius: 10,
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: 'black',
+  },
+  planningTextFoodName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  planningFoodDetailsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 5,
+  },
+  planningTextFoodCalories: {
+    margin: 3,
+    fontSize: 15,
+  },
+  planningTextFoodQuantity: {
+    margin: 3,
+    fontSize: 14,
+  },
+  planningButtonRemoveFood: {
+    backgroundColor: '#F16262',
+    borderRadius: 25,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 'auto',
   },
 });
+
+// Create a bottom bar naviator
 const Tab = createBottomTabNavigator();
+
+// Create the context tht will allow child components to access and modify the meal plan
 export const MealPlanContext = React.createContext();
 
 export default function App() {
+  // State hook for meal plan with empty object as an initial value
   const [lMealPlan, setLMealPlan] = useState({});
 
+  // Function to add food items to a meal type on a specific date.
   const addMealItem = (date, mealType, foodItem, quantity) => {
     setLMealPlan((prevPlan) => {
       const newPlan = { ...prevPlan };
@@ -968,12 +985,9 @@ export default function App() {
       const existingItemIndex = newPlan[date][mealType].findIndex(
         (item) => item.foodItem.foodId === foodItem.foodId
       );
-
-      // si oui, on incrémente
       if (existingItemIndex !== -1) {
         newPlan[date][mealType][existingItemIndex].quantity += quantity;
       } else {
-        // si non, on l'ajoute
         newPlan[date][mealType].push({ foodItem, quantity });
       }
 
@@ -981,6 +995,7 @@ export default function App() {
     });
   };
 
+  // Function to remove a food item from a meal type on a specific date.
   const removeMealItem = (date, mealType, foodItem) => {
     setLMealPlan((prevPlan) => {
       const newPlan = { ...prevPlan };
@@ -993,6 +1008,7 @@ export default function App() {
     });
   };
 
+  // Function to update the quantity of a food item in a meal type on a specific date.
   const updateMealItem = (date, mealType, foodItem, quantityChange) => {
     setLMealPlan((prevPlan) => {
       const newPlan = { ...prevPlan };
@@ -1009,11 +1025,11 @@ export default function App() {
           newPlan[date][mealType][existingItemIndex].quantity + quantityChange
         );
       }
-
       return newPlan;
     });
   };
 
+  // Function to save the meal plan to local storage
   const saveMealPlan = async (mealPlan) => {
     try {
       await AsyncStorage.setItem('@mealPlan', JSON.stringify(mealPlan));
@@ -1022,6 +1038,7 @@ export default function App() {
     }
   };
 
+  // Function to load the meal plan from the local storage
   const loadMealPlan = async () => {
     try {
       let mealPlan = await AsyncStorage.getItem('@mealPlan');
@@ -1033,12 +1050,12 @@ export default function App() {
     }
   };
 
-  //Charge le plan de repas lors du montage du composant
+  // Call the load method when the component is mounted
   useEffect(() => {
     loadMealPlan();
   }, []);
 
-  //Enregirstre le plan de repas à chaque modifications
+  // Call the save method everytime the meal plan change
   useEffect(() => {
     saveMealPlan(lMealPlan);
   }, [lMealPlan]);

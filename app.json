@@ -8,7 +8,7 @@
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/nutrition.png",
-      "resizeMode": "native",
+      "resizeMode": "cover",
       "backgroundColor": ""
     },
     "assetBundlePatterns": [
