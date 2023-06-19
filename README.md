@@ -6,11 +6,12 @@ Ce projet a été réalisé par Thi Quynh-Nhu PHAM et Florian NOR dans le cadre 
 
 ## Description du Projet
 
-Ce projet est une application mobile construite en React Native qui permet aux utilisateurs de planifier leurs repas quotidiens. Les utilisateurs peuvent ajouter, supprimer et modifier les éléments de leurs repas, ainsi que calculer les calories totales de chaque repas. L'ojectif est de permettre aux utilisateurs d'avoir un meilleur suivi de leur alimentation et de l'adapter en fonction de leurs objectifs.Les données de repas sont sauvegardées localement sur le dispositif de l'utilisateur.
+Ce projet est une application mobile construite en React Native qui permet aux utilisateurs de planifier leurs repas quotidien. Les utilisateurs peuvent ajouter, supprimer et modifier les éléments de leurs repas, ainsi que calculer l'apport calorique journalier. L'ojectif est de permettre aux utilisateurs d'avoir un meilleur suivi de leur alimentation et de l'adapter en fonction de leurs objectifs.
+Il est important de noter que les données de repas sont sauvegardées localement sur l'appareil de l'utilisateur.
 
 ## Installation
 
-Pour installer et exécuter ce projet, veuillez suivre les étapes suivantes :
+Pour installer et exécuter ce projet, vous devez suivre les étapes suivantes :
 
 1. Assurez-vous d'avoir installé Node.js et npm sur votre ordinateur. Si vous ne les avez pas encore installé, vous pouvez les télécharger à partir de https://nodejs.org/en/download/.
    
@@ -31,7 +32,7 @@ Pour installer et exécuter ce projet, veuillez suivre les étapes suivantes :
 
 ## Utilisation
 
-1. Dans l'application, vous pouvez naviguer entre les différents écrans à partir de la barre de navigation située en bas.
+1. Dans l'application, vous pouvez naviguer entre les 3 différents écrans à partir de la barre de navigation située en bas.
 
 2. Dans l'écran "Health Goals", vous pouvez définir vos objectifs de santé et obtenir l'apport calorique nécessaire pour atteindre vos objectifs.
 
